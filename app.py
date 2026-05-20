@@ -1,184 +1,225 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+import datetime
 
-# 1. CONFIGURAÇÃO GERAL DO APP
-st.set_page_config(page_title="EMTN - Hospital Municipal de Paulínia", page_icon="🏥", layout="wide")
+# 1. CONFIGURAÇÃO DA PÁGINA & IDENTIDADE VISUAL
+st.set_page_config(
+    page_title="EMTN - Hospital Municipal de Paulínia",
+    page_icon="🩺",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# Injeção de CSS para customização completa das cores do Logotipo
 st.markdown("""
     <style>
-    .main-title { font-size:30px; font-weight:bold; color:#0C4A60; text-align:center; margin-bottom:5px; }
-    .subtitle { font-size:15px; color:#4A5568; text-align:center; margin-bottom:25px; }
-    .section-header { font-size:20px; font-weight:bold; color:#111827; border-bottom: 2px solid #E5E7EB; padding-bottom:5px; margin-top:15px; margin-bottom:15px; }
-    .card-alerta { border-left: 6px solid #DC2626; padding: 12px; background-color: #FEF2F2; margin-bottom: 10px; border-radius: 4px; }
-    .card-alerta-aviso { border-left: 6px solid #F59E0B; padding: 12px; background-color: #FFFBEB; margin-bottom: 10px; border-radius: 4px; }
+        /* Fundo do App */
+        .stApp {
+            background-color: #FCFBF7;
+            color: #334155;
+        }
+        /* Títulos */
+        h1, h2, h3 {
+            color: #4D6452 !important;
+            font-family: 'Montserrat', sans-serif;
+        }
+        /* Customização de Botões */
+        div.stButton > button:first-child {
+            background-color: #4D6452;
+            color: white;
+            border-radius: 8px;
+            border: none;
+            padding: 10px 24px;
+            font-weight: bold;
+        }
+        div.stButton > button:first-child:hover {
+            background-color: #D97E3A;
+            color: white;
+        }
+        /* Estilização dos blocos/cards */
+        .metric-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #D97E3A;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
     </style>
-""", unsafe_allow_html=True)
+""", unsafe_gradient=True)
 
-st.markdown('<div class="main-title">🏥 Sistema de Gestão de Terapia Nutricional - HMP</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Conformidade: Regimento/Manual HMP | Guia Rápido | Manual USP | Manual de Nutrição Clínica</div>', unsafe_allow_html=True)
-
-# 2. BANCO DE DADOS EM MEMÓRIA SIMULADO (A ser conectado ao Sheets no próximo passo)
-if "banco_central" not in st.session_state:
-    st.session_state.banco_central = [
+# 2. BANCO DE DADOS EM MEMÓRIA (Simulação para visualização de indicadores e listagem)
+if 'banco_pacientes' not in st.session_state:
+    st.session_state.banco_pacientes = pd.DataFrame([
         {
-            "Unidade": "UTI Geral", "Leito": "Leito 01", "Nome": "Carlos Bento de Souza", "Idade": 68, 
-            "Data Internação": "10/05/2026", "Diagnóstico": "AVC Isquêmico + Pneumonia Aspirativa", 
-            "Nível Assistencial": "Terciário (Risco Alto)", "Via Alimentação": "TNE (Sonda Nasoentérica)", 
-            "Jejum": "Não", "Dieta Prescrita": "Polimérica Hiperproteica 1.5 kcal/ml", 
-            "Peso": 72.0, "Altura": 1.70, "IMC": 24.9, "NET": 1800, "Meta Calórica": "1440 - 1800 kcal", 
-            "Meta Proteica": "108 - 144 g", "Suplemento": "Nenhum", 
-            "Evolução Clínica": "Paciente estável, tolerando dieta enteral em bomba de infusão a 60ml/h.", 
-            "Intercorrências": "Nenhuma nas últimas 24h.", "Status_EMTN": "Pendente Visita"
+            "Avaliador": "Dr. Vinícius Mariano", "Data Admissão": "2026-05-10", "Nome": "Carlos Silva", 
+            "Sexo": "Masculino", "Setor": "UTI", "Leito": "102-A", "Faixa Etária": "19-59", 
+            "Via Alimentação": "Sonda Nasoenteral", "Risco": "Alto", "Adequacao_Calorica": 88.0
         },
         {
-            "Unidade": "Clínica Médica", "Leito": "Quarto 204-A", "Nome": "Maria das Dores", "Idade": 74, 
-            "Data Internação": "14/05/2026", "Diagnóstico": "Fratura de Fêmur + Desnutrição Grave", 
-            "Nível Assistencial": "Secundário B (Risco)", "Via Alimentação": "Oral + Suplementação", 
-            "Jejum": "Não", "Dieta Prescrita": "Dieta Branda Hiperproteica", 
-            "Peso": 45.0, "Altura": 1.55, "IMC": 18.7, "NET": 1350, "Meta Calórica": "1125 - 1350 kcal", 
-            "Meta Proteica": "67 - 90 g", "Suplemento": "Suplemento Hipercalórico Pó", 
-            "Evolução Clínica": "Baixa aceitação da dieta hospitalar via oral (<50%). Iniciado suplemento.", 
-            "Intercorrências": "Recusa parcial do suplemento no período da tarde.", "Status_EMTN": "Pendente Visita"
+            "Avaliador": "Dra. Juliana Costa", "Data Admissão": "2026-05-14", "Nome": "Maria Oliveira", 
+            "Sexo": "Feminino", "Setor": "UTI", "Leito": "105-B", "Faixa Etária": "> ou = 60", 
+            "Via Alimentação": "Parenteral central", "Risco": "Alto", "Adequacao_Calorica": 92.0
+        },
+        {
+            "Avaliador": "Dr. Vinícius Mariano", "Data Admissão": "2026-05-15", "Nome": "Pedro Rocha", 
+            "Sexo": "Masculino", "Setor": "Clinica Médica", "Leito": "204", "Faixa Etária": "19-59", 
+            "Via Alimentação": "Oral", "Risco": "Médio", "Adequacao_Calorica": 75.0
+        },
+        {
+            "Avaliador": "Dra. Juliana Costa", "Data Admissão": "2026-05-18", "Nome": "Ana Júlia Bento", 
+            "Sexo": "Feminino", "Setor": "Pediatria", "Leito": "Ped 03", "Faixa Etária": "< ou = 18", 
+            "Via Alimentação": "Oral", "Risco": "Baixo", "Adequacao_Calorica": 100.0
         }
-    ]
+    ])
 
-# 3. CRIAÇÃO DAS ABAS DE FLUXO DE TRABALHO
-aba_terceirizada, aba_painel_emtn, aba_plantao = st.tabs([
-    "📋 1. Entrada de Dados (Equipe Terceirizada)", 
-    "🚨 2. Central de Alertas (Painel EMTN)",
-    "📝 3. PASSAGEM DE PLANTÃO AUTOMÁTICA"
-])
+# 3. BARRA LATERAL (Navegação e Identidade)
+st.sidebar.markdown(
+    "<h2 style='text-align: center; color: #4D6452; margin-bottom: 0;'>EMTN</h2>"
+    "<p style='text-align: center; color: #D97E3A; font-weight: bold; margin-top: 0;'>HMP Paulínia - SP</p>", 
+    unsafe_allow_html=True
+)
+st.sidebar.markdown("---")
+menu = st.sidebar.radio("Navegação do Plantão:", ["📊 Dashboard de Indicadores", "📋 Listagem por Unidade", "📝 Novo Protocolo de Avaliação"])
 
-# ==========================================
-# ABA 1: ENTRADA DE DADOS (EQUIPE TERCEIRIZADA)
-# ==========================================
-with aba_terceirizada:
-    st.markdown('<div class="section-header">Formulário de Avaliação Inicial e Evolução de Rotina</div>', unsafe_allow_html=True)
-    st.caption("A equipe terceirizada utiliza este espaço para cadastrar novas triagens e registrar as evoluções clínicas diárias.")
+# SEÇÃO 1: DASHBOARD DE INDICADORES (Agrupados por Unidade/Setor)
+if menu == "📊 Dashboard de Indicadores":
+    st.title("📊 Indicadores de Qualidade Nutricional")
+    st.markdown("Monitoramento em tempo real estratificado por unidade de internação hospitalar.")
     
-    with st.form("registro_paciente"):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            u_int = st.selectbox("Unidade de Internação", ["UTI Geral", "Clínica Médica", "Clínica Cirúrgica", "Pediatria", "Maternidade"])
-            leito_int = st.text_input("Leito / Quarto")
-            nome_int = st.text_input("Nome Completo do Paciente")
-            idade_int = st.number_input("Idade", min_value=0, max_value=120, step=1)
-            dt_int = st.date_input("Data da Internação Hospitalar").strftime('%d/%m/%Y')
+    df = st.session_state.banco_pacientes
+    
+    # [span_3](start_span)KPIs Gerais de Cuidado[span_3](end_span)
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        st.markdown(f"<div class='metric-card'><h4>Total de Pacientes em TN</h4><h1>{len(df)}</h1></div>", unsafe_allow_html=True)
+    with kpi2:
+        alto_risco = len(df[df['Risco'] == 'Alto'])
+        st.markdown(f"<div class='metric-card' style='border-left-color: #D97E3A;'><h4>Pacientes em Alto Risco</h4><h1>{alto_risco}</h1></div>", unsafe_allow_html=True)
+    with kpi3:
+        media_adequacao = df['Adequacao_Calorica'].mean()
+        st.markdown(f"<div class='metric-card' style='border-left-color: #4D6452;'><h4>Média de Adequação Calórica</h4><h1>{media_adequacao:.1f}%</h1></div>", unsafe_allow_html=True)
         
-        with c2:
-            diag_int = st.text_area("Diretriz / Diagnóstico Principal")
-            nivel_int = st.selectbox("Nível Assistencial (Triagem)", ["Sem Risco", "Secundário B (Risco)", "Terciário (Risco Alto)"])
-            via_int = st.selectbox("Via de Alimentação Atual", ["Oral", "Oral + Suplemento", "TNE (Sonda Nasoentérica)", "GTT / JTM", "TNP (Parenteral)", "Jejum Absoluto"])
-            jejum_int = st.radio("Paciente em Jejum no Momento?", ["Não", "Sim"])
-            dieta_int = st.text_input("Dieta Prescrita Atual")
+    st.markdown("### Adequação Calórica Média por Setor")
+    chart_data = df.groupby('Setor')['Adequacao_Calorica'].mean().reset_index()
+    st.bar_chart(data=chart_data, x='Setor', y='Adequacao_Calorica', color="#4D6452")
+
+# SEÇÃO 2: LISTAGEM DE PACIENTES COM FILTRO DE SETOR (Passagem de Plantão)
+elif menu == "📋 Listagem por Unidade":
+    st.title("📋 Passagem de Plantão por Unidade de Internação")
+    st.markdown("Selecione a ala para visualizar a listagem nominal e vias de alimentação ativas.")
+    
+    df = st.session_state.banco_pacientes
+    
+    # [span_4](start_span)Lista de setores dinâmicos conforme mapeado no formulário[span_4](end_span)
+    setores_disponiveis = ["Pronto Socorro Adulto", "Pronto Socorro Infantil", "Clinica Médica", "Clínica Cirúrgica", "Ginecologia e Obstetrícia", "Pediatria", "UTI"]
+    
+    # Criando abas dinâmicas baseadas nos setores preenchidos ou existentes
+    abas = st.tabs(setores_disponiveis)
+    
+    for i, setor in enumerate(setores_disponiveis):
+        with abas[i]:
+            df_filtrado = df[df['Setor'] == setor]
+            st.subheader(f"Ala: {setor} ({len(df_filtrado)} pacientes)")
             
-        with c3:
-            p_int = st.number_input("Peso para Cálculo (kg)", min_value=0.0, step=0.1)
-            a_int = st.number_input("Altura (m)", min_value=0.0, step=0.01)
-            suple_int = st.text_input("Suplemento Prescrito (Se houver)", value="Nenhum")
-            evol_int = st.text_area("Resumo da Evolução Clínica")
-            interc_int = st.text_area("Intercorrências registradas", value="Nenhuma nas últimas 24h.")
-            
-        enviar_dados = st.form_submit_button("Salvar e Processar Dados")
-        
-        if enviar_dados:
-            if nome_int and leito_int:
-                # Cálculos automáticos baseados nas diretrizes do Guia Rápido HMP
-                imc_calc = p_int / (a_int ** 2) if p_int > 0 and a_int > 0 else 0
-                net_calc = p_int * 25 # Regra de bolso padrão
-                
-                # Definição das metas conforme o Guia Rápido HMP
-                if "Terciário" in nivel_int:
-                    m_cal = f"{p_int*20:.0f} - {p_int*25:.0f} kcal" # Fase Aguda
-                else:
-                    m_cal = f"{p_int*25:.0f} - {p_int*30:.0f} kcal" # Anabolismo/Recuperação
-                m_prot = f"{p_int*1.2:.1f} - {p_int*1.5:.1f} g"
-                
-                # GATILHO DA LINHA DE CUIDADO: Define se vai gerar alerta para a EMTN central
-                if nivel_int in ["Secundário B (Risco)", "Terciário (Risco Alto)"] or via_int in ["TNE (Sonda Nasoentérica)", "TNP (Parenteral)", "Jejum Absoluto"]:
-                    status_emtn = "Pendente Visita"
-                else:
-                    status_emtn = "Acompanhamento Terceirizada"
-                
-                novo_registro = {
-                    "Unidade": u_int, "Leito": leito_int, "Nome": nome_int, "Idade": idade_int, "Data Internação": dt_int,
-                    "Diagnóstico": diag_int, "Nível Assistencial": nivel_int, "Via Alimentação": via_int, "Jejum": jejum_int,
-                    "Dieta Prescrita": dieta_int, "Peso": p_int, "Altura": a_int, "IMC": round(imc_calc, 1),
-                    "NET": round(net_calc), "Meta Calórica": m_cal, "Meta Proteica": m_prot, "Suplemento": suple_int,
-                    "Evolução Clínica": evol_int, "Intercorrências": interc_int, "Status_EMTN": status_emtn
-                }
-                st.session_state.banco_central.append(novo_registro)
-                st.success("✅ Avaliação salva com sucesso! O Mural de Passagem de Plantão e a Central de Alertas foram atualizados.")
+            if not df_filtrado.empty:
+                st.dataframe(
+                    df_filtrado[["Nome", "Leito", "Sexo", "Faixa Etária", "Via Alimentação", "Risco", "Avaliador"]],
+                    use_container_width=True,
+                    hide_index=True
+                )
             else:
-                st.error("❌ Por favor, preencha os campos obrigatórios: Nome e Leito.")
+                st.info(f"Nenhum paciente sob acompanhamento da EMTN no(a) {setor} atualmente.")
 
-# ==========================================
-# ABA 2: CENTRAL DE ALERTAS (EQUIPE CENTRAL EMTN)
-# ==========================================
-with aba_painel_emtn:
-    st.markdown('<div class="section-header">Central de Gatilhos Assistenciais Ativos (Supervisão EMTN)</div>', unsafe_allow_html=True)
-    st.caption("Filtro automático de pacientes elegíveis para visita prioritária da equipe central da EMTN conforme o Guia Rápido.")
+# SEÇÃO 3: NOVO PROTOCOLO DE AVALIAÇÃO (Dinamizado por Idade/Protocolo correspondente)
+elif menu == "📝 Novo Protocolo de Avaliação":
+    st.title("📝 Protocolo de Avaliação Nutricional")
+    [span_5](start_span)st.markdown("Formulário oficial para padronização e otimização do processo assistencial da EMTN[span_5](end_span).")
     
-    df_atual = pd.DataFrame(st.session_state.banco_central)
-    alertas = df_atual[df_atual["Status_EMTN"] == "Pendente Visita"]
-    
-    if alertas.empty:
-        st.success("✅ Excelente! Nenhum paciente crítico aguardando avaliação ou parecer da EMTN no momento.")
-    else:
-        st.warning(f"Atenção: Existem {len(alertas)} pacientes com critérios de risco pendentes de visita pela EMTN.")
-        
-        for idx, row in alertas.iterrows():
-            estilo_card = "card-alerta" if row["Nível Assistencial"] == "Terciário (Risco Alto)" else "card-alerta-aviso"
+    with st.form("formulario_emtn"):
+        st.markdown("### 1. Identificação Geral")
+        col1, col2 = st.columns(2)
+        with col1:
+            [span_6](start_span)avaliador = st.text_input("Avaliador *", placeholder="Nome do profissional da EMTN")[span_6](end_span)
+            [span_7](start_span)nome_paciente = st.text_input("Nome do Paciente *")[span_7](end_span)
+            [span_8](start_span)sexo = st.selectbox("Sexo *", ["Masculino", "Feminino"])[span_8](end_span)
+        with col2:
+            [span_9](start_span)data_admissao = st.date_input("Data de Admissão *", datetime.date.today())[span_9](end_span)
+            [span_10](start_span)setor = st.selectbox("Setor / Unidade de Internação *", ["Pronto Socorro Adulto", "Pronto Socorro Infantil", "Clinica Médica", "Clínica Cirúrgica", "Ginecologia e Obstetrícia", "Pediatria", "UTI"])[span_10](end_span)
+            [span_11](start_span)leito = st.text_input("Leito *")[span_11](end_span)
             
-            st.markdown(f"""
-                <div class="{estilo_card}">
-                    <strong>📍 Unidade: {row['Unidade']} — Leito: {row['Leito']}</strong><br>
-                    <b>Paciente:</b> {row['Nome']} ({row['Idade']} anos) | <b>Data de Admissão:</b> {row['Data Internação']}<br>
-                    <b>Risco Nutricional:</b> {row['Nível Assistencial']} | <b>Via Selecionada:</b> {row['Via Alimentação']} | <b>Em Jejum:</b> {row['Jejum']}<br>
-                    <b>Diagnóstico/Conduta da Terceirizada:</b> {row['Diagnóstico']}
-                </div>
-            """, unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("### 2. Triagem e Antropometria Inicial")
+        col3, col4 = st.columns(2)
+        with col3:
+            [span_12](start_span)via_alimentacao = st.multiselect("Via de Alimentação Atual *", ["Oral", "Sonda Nasoenteral", "Gastrostomia", "Jejunostomia", "Parenteral periférica", "Parenteral central", "Jejum"])[span_12](end_span)
+            [span_13](start_span)momento = st.radio("Momento da Avaliação *", ["Avaliação Inicial", "Reavaliação", "Evolução Nutricional"], horizontal=True)[span_13](end_span)
+        with col4:
+            faixa_etaria = st.selectbox(
+                "Faixa Etária (Define o Protocolo de Screening) *", 
+                ["< ou = 18 (Pediatria)", "19-59 (Adulto)", "> ou = 60 (Idoso)"]
+            [span_14](start_span))
             
-            # Botão de Ação para a EMTN registrar que visitou e mudou a prescrição
-            if st.button(f"🩺 Registrar Visita EMTN / Carimbar Validação: {row['Nome']}", key=f"btn_emtn_{idx}"):
-                st.session_state.banco_central[idx]["Status_EMTN"] = "Validado e Monitorado pela EMTN"
-                st.toast(f"Caso de {row['Nome']} assumido pela equipe central da EMTN!", icon="📝")
-                st.rerun()
+        # BLOCOS DE PROTOCOLO DINÂMICO CONFORME A FAIXA ETÁRIA SELECIONADA[span_14](end_span)
+        st.markdown("---")
+        if "< ou = 18" in faixa_etaria:
+            [span_15](start_span)st.markdown("### 🧬 Protocolo STRONG KIDS (Triagem Pediátrica)")[span_15](end_span)
+            [span_16](start_span)st.info("Ferramenta para avaliação de risco de desnutrição em crianças de 1 mês a 18 anos[span_16](end_span).")
+            [span_17](start_span)[span_18](start_span)sk1 = st.checkbox("1. A criança parece ter déficit nutricional ou desnutrição subjetiva? (1 pt)")[span_17](end_span)[span_18](end_span)
+            [span_19](start_span)[span_20](start_span)sk2 = st.checkbox("2. Há presença de doença de alto risco nutricional ou cirurgia de grande porte? (2 pts)")[span_19](end_span)[span_20](end_span)
+            [span_21](start_span)[span_22](start_span)sk3 = st.checkbox("3. Ingestão nutricional reduzida ou perdas gastrointestinais significativas nos últimos dias? (1 pt)")[span_21](end_span)[span_22](end_span)
+            [span_23](start_span)[span_24](start_span)sk4 = st.checkbox("4. Houve perda de peso ou ganho insuficiente nas últimas semanas? (1 pt)")[span_23](end_span)[span_24](end_span)
+            
+            # [span_25](start_span)Cálculo rápido do score do formulário[span_25](end_span)
+            score_sk = sum([sk1, sk2*2, sk3, sk4])
+            [span_26](start_span)[span_27](start_span)risco_final = "Baixo" if score_sk == 0 else "Médio" if score_sk <= 3 else "Alto"[span_26](end_span)[span_27](end_span)
+            [span_28](start_span)[span_29](start_span)st.metric("Escore Total STRONG KIDS", f"{score_sk} pontos", f"Risco: {risco_final}")[span_28](end_span)[span_29](end_span)
 
-# ==========================================
-# ABA 3: PASSAGEM DE PLANTÃO AUTOMÁTICA
-# ==========================================
-with aba_plantao:
-    st.markdown('<div class="section-header">Mural Dinâmico de Passagem de Plantão da Terapia Nutricional</div>', unsafe_allow_html=True)
-    st.caption("Visão macro e atualizada em tempo real para a passagem de turnos ou round multidisciplinar.")
-    
-    df_plantao = pd.DataFrame(st.session_state.banco_central)
-    
-    # Filtro rápido por setor para agilizar o round beira-leito
-    setores = ["Todos os Setores"] + list(df_plantao["Unidade"].unique())
-    filtro_setor = st.selectbox("Filtrar visualização por setor:", setores)
-    
-    if filtro_setor != "Todos os Setores":
-        df_plantao = df_plantao[df_plantao["Unidade"] == filtro_setor]
+        elif "19-59" in faixa_etaria:
+            [span_30](start_span)st.markdown("### 🫁 Protocolo NRS 2002 (Triagem Adulto)")[span_30](end_span)
+            [span_31](start_span)st.info("Instrumento internacional recomendado para avaliar ingestão dietética e gravidade da doença[span_31](end_span).")
+            [span_32](start_span)[span_33](start_span)nrs1 = st.checkbox("IMC < 20,5 kg/m²?")[span_32](end_span)[span_33](end_span)
+            [span_34](start_span)[span_35](start_span)nrs2 = st.checkbox("Paciente perdeu peso nos últimos 3 meses?")[span_34](end_span)[span_35](end_span)
+            [span_36](start_span)[span_37](start_span)nrs3 = st.checkbox("Paciente teve sua ingestão dietética reduzida na última semana?")[span_36](end_span)[span_37](end_span)
+            [span_38](start_span)[span_39](start_span)nrs4 = st.checkbox("O paciente é gravemente doente / crítico?")[span_38](end_span)[span_39](end_span)
+            
+            score_nrs = sum([nrs1, nrs2, nrs3, nrs4])
+            risco_final = "Alto" if score_nrs >= 2 else "Médio" if score_nrs == 1 else "Baixo"
+            st.metric("Escore Triagem Inicial NRS", f"{score_nrs} itens positivos", f"Risco Recomendado: {risco_final}")
+
+        else:
+            [span_40](start_span)st.markdown("### 👴 Protocolo MNA® (Mini Nutritional Assessment - Idoso)")[span_40](end_span)
+            [span_41](start_span)[span_42](start_span)st.info("Detecção precoce do risco de desnutrição e funcionalidade motora do paciente idoso[span_41](end_span)[span_42](end_span).")
+            [span_43](start_span)mna1 = st.selectbox("A. Diminuição da ingesta alimentar nos últimos 3 meses?", ["Sem diminuição", "Diminuição moderada", "Diminuição grave"])[span_43](end_span)
+            [span_44](start_span)mna2 = st.selectbox("C. Mobilidade atual:", ["Normal", "Deambula mas não sai de casa", "Restrito ao leito/cadeira"])[span_44](end_span)
+            [span_45](start_span)mna3 = st.checkbox("D. Passou por estresse psicológico ou doença aguda recente?")[span_45](end_span)
+            [span_46](start_span)mna4 = st.selectbox("E. Problemas neuropsicológicos:", ["Sem problemas", "Demência ligeira", "Demência ou depressão grave"])[span_46](end_span)
+            
+            risco_final = "Alto" if mna3 else "Médio"
+
+        st.markdown("---")
+        st.markdown("### 3. Planejamento Terapêutico Proposto")
+        [span_47](start_span)conduta_proposta = st.text_area("Conduta e Metas Calórico-Proteicas de Beira-Leito[span_47](end_span)")
+        adequacao_estimada = st.slider("Meta Estimada de Adequação Nutricional (%)", 0, 100, 85)
         
-    # Colunas ordenadas exatamente segundo a sua solicitação técnica
-    colunas_especificadas = [
-        "Unidade", "Leito", "Nome", "Idade", "Data Internação", "Diagnóstico", 
-        "Nível Assistencial", "Via Alimentação", "Jejum", "Dieta Prescrita", 
-        "Peso", "Altura", "IMC", "NET", "Meta Calórica", "Meta Proteica", 
-        "Suplemento", "Evolução Clínica", "Intercorrências"
-    ]
-    
-    # Apresenta a tabela unificada
-    st.dataframe(df_plantao[colunas_especificadas], use_container_width=True, hide_index=True)
-    
-    # Exportador em formato amigável para contingência em papel ou envio por e-mail institucional
-    st.markdown("### 🖨️ Exportação do Plantão")
-    csv = df_plantao[colunas_especificadas].to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Baixar Dados de Passagem de Plantão (.CSV para Excel)",
-        data=csv,
-        file_name=f"plantao_emtn_hmp_{datetime.now().strftime('%d_%m_%Y')}.csv",
-        mime="text/csv",
-    )
+        # Botão de envio
+        enviar = st.form_submit_button("Salvar Registro e Atualizar Plantão")
+        
+        if enviar:
+            # Estruturando nova linha para acoplamento no dataframe global
+            novo_paciente = {
+                "Avaliador": avaliador,
+                "Data Admissão": str(data_admissao),
+                "Nome": nome_paciente,
+                "Sexo": sexo,
+                "Setor": setor,
+                "Leito": leito,
+                "Faixa Etária": faixa_etaria.split(" ")[0],
+                "Via Alimentação": ", ".join(via_alimentacao) if via_alimentacao else "Jejum",
+                "Risco": risco_final,
+                "Adequacao_Calorica": float(adequacao_estimada)
+            }
+            
+            # Adiciona ao dataframe da sessão
+            st.session_state.banco_pacientes = pd.concat([st.session_state.banco_pacientes, pd.DataFrame([novo_paciente])], ignore_index=True)
+            st.success(f"Sucesso! O prontuário de {nome_paciente} foi processado e agrupado no setor {setor}!")
