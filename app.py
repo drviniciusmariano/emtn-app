@@ -4,111 +4,49 @@ import numpy as np
 import plotly.express as px
 from datetime import datetime, date
 
-# Código Base64 otimizado da sua imagem EMTN
-LOGOTIPO_EMTN_BASE64 = (
-    "data:image/jpeg;base64,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"
-)
+# CONFIGURAÇÕES DA PÁGINA
+st.set_page_config(page_title="EMTN - Hospital Municipal de Paulínia", page_icon="🏥", layout="wide")
 
-# 1. Configura a página com um ícone genérico temporário (hospital) para evitar quebras
-st.set_page_config(
-    page_title="EMTN - Hospital Municipal de Paulínia", 
-    page_icon="🏥", 
-    layout="wide"
-)
-
-# 2. Injeta via HTML o seu logotipo real diretamente no Head do Navegador e estiliza o app
-st.markdown(f"""
-    <head>
-        <link rel="icon" type="image/jpeg" href="{LOGOTIPO_EMTN_BASE64}">
-    </head>
+# ESTILIZAÇÃO CUSTOMIZADA E REGRAS DE IMPRESSÃO
+st.markdown("""
     <style>
-        .main {{ background-color: #FAFAFA; }}
-        .sidebar .sidebar-content {{ background-color: #E2E8F0; }}
-        /* ... resto dos seus estilos CSS permanecem iguais ... */
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown(f"""
-    <style>
-        .main {{ background-color: #FAFAFA; }}
-        .sidebar .sidebar-content {{ background-color: #E2E8F0; }}
-        h1, h2, h3 {{ color: #4D6452; font-family: 'Helvetica Neue', Arial, sans-serif; }}
-        .metric-card {{
+        .main { background-color: #FAFAFA; }
+        .sidebar .sidebar-content { background-color: #E2E8F0; }
+        h1, h2, h3 { color: #4D6452; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        .metric-card {
             background-color: #ffffff;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border-left: 5px solid #4D6452;
             margin-bottom: 10px;
-        }}
-        .stButton>button {{
+        }
+        .stButton>button {
             background-color: #4D6452;
             color: white;
             border-radius: 6px;
-        }}
-        .flag-box {{
+        }
+        .flag-box {
             padding: 15px; 
             border-radius: 8px; 
             margin-top: 10px; 
             margin-bottom: 10px;
             font-weight: 500;
-        }}
-        .ai-box {{
+        }
+        .ai-box {
             background-color: #F0F4F8;
             border-left: 6px solid #1E3A8A;
             color: #1E3A8A;
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
-        }}
+        }
         
         /* Configuração de Impressão Otimizada para PDF */
-        @media print {{
-            body * {{ visibility: hidden; }}
-            .secao-impressao, .secao-impressao * {{ visibility: visible; }}
-            .secao-impressao {{ 
+        @media print {
+            body * { visibility: hidden; }
+            .secao-impressao, .secao-impressao * { visibility: visible; }
+            .secao-impressao { 
                 position: absolute; 
                 left: 0; 
                 top: 0; 
@@ -116,9 +54,9 @@ st.markdown(f"""
                 font-size: 12pt; 
                 color: #000;
                 background: white;
-            }}
-            .no-print {{ display: none !important; }}
-        }}
+            }
+            .no-print { display: none !important; }
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -157,14 +95,8 @@ if not st.session_state.autenticado:
             st.error("Credenciais incorretas.")
     st.stop()
 
-# BARRA LATERAL DE NAVEGAÇÃO - LOGO DA EMTN HMP INCORPORADA NO TOPO
-st.sidebar.markdown(f"""
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="{LOGOTIPO_EMTN_BASE64}" width="130" style="border-radius: 50%; box-shadow: 0px 2px 6px rgba(0,0,0,0.15);"><br>
-        <h3 style='margin-top: 10px; color: #4D6452; margin-bottom: 2px;'>EMTN HMP</h3>
-        <p style='font-size: 10pt; color: #555;'>👤 {st.session_state.nome_avaliador}</p>
-    </div>
-""", unsafe_allow_html=True)
+# BARRA LATERAL DE NAVEGAÇÃO - REORGANIZADA CONFORME SOLICITADO
+st.sidebar.markdown(f"<h3 style='text-align: center; color: #4D6452;'>EMTN HMP</h3><p style='text-align: center;'>👤 {st.session_state.nome_avaliador}</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Módulos do Sistema:", [
     "Módulo 1: Triagem e Admissão", 
@@ -430,7 +362,7 @@ elif menu == "Módulo 3: Avaliação EMTN":
     if df.empty:
         st.info("Nenhum paciente admitido no sistema até o momento.")
     else:
-        # Aplicação das regras de filtragem clínica solicitadas
+        # Aplicação exata das regras de filtragem clínica solicitadas
         criterio_nivel = df["Nível Assistência"].isin(["Secundário B", "Terciário"])
         criterio_via_admissao = df["Via Alimentação"].isin(["Sonda Nasoenteral", "Parenteral periférica", "Parenteral central"])
         criterio_via_proposta = df["Via Proposta"].isin(["Sonda Nasoenteral", "Parenteral periférica", "Parenteral central"])
