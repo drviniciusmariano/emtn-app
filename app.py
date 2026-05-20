@@ -60,7 +60,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# BANCO DE DADOS EM MEMÓRIA (INICIALIZAÇÃO DO ESTADO SA SESSÃO)
+# BANCO DE DADOS EM MEMÓRIA (INICIALIZAÇÃO DO ESTADO DA SESSÃO)
 if 'banco_pacientes' not in st.session_state:
     st.session_state.banco_pacientes = pd.DataFrame(columns=[
         "Avaliador", "Data Admissão", "Nome", "Sexo", "Setor", "Leito", "Data Triagem", 
@@ -128,7 +128,7 @@ def calcular_idade_detalhada(data_nasc):
         meses += 12
     return anos, meses
 
-# FUNÇÃO DE INTELIGÊNCIA ARTIFICIAL CLÍNICA REVISADA (Conforme Manuais USP, HMP e Matrizes de Risco)
+# FUNÇÃO DE INTELIGÊNCIA ARTIFICIAL CLÍNICA REVISADA
 def analisar_dados_com_ia(dados):
     idade = dados.get("Idade Anos", 30)
     comorbidades = dados.get("Comorbidades", "")
@@ -139,19 +139,15 @@ def analisar_dados_com_ia(dados):
     
     insights = []
     
-    # Alerta de Realimentação baseado em critérios específicos e não em fórmulas genéricas de infusão
     if "Etilismo" in comorbidades or "Acamado(a)" in comorbidades or (faixa_etaria == "19-59" and escore >= 3) or (faixa_etaria == ">= 60" and escore < 12):
         insights.append("🛑 **Risco Clínico Intermediado (Síndrome de Realimentação):** Paciente com critérios de vulnerabilidade metabólica aguda. Recomenda-se acompanhamento rigoroso pela EMTN de eletrólitos extracelulares (Fósforo, Magnésio, Potássio) nas primeiras 72h e progressão escalonada obrigatória do aporte calórico total diário.")
     
-    # Intervenção em Geriatria (Manual de Cuidados ao Idoso / MNA)
     if faixa_etaria == ">= 60" and (risco == "Risco de Desnutrição" or risco == "Desnutrido"):
         insights.append("👴 **Fragilidade Geriátrica Avançada:** Paciente idoso identificado em risco ou déficit nutricional evidente. Alerta para alta propensão à perda de massa muscular magra (sarcopenia) e queda da imunidade celular. Priorizar via oral qualificada ou terapia enteral precoce.")
         
-    # Diabetes Mellitus
     if "Diabetes mellitus" in comorbidades:
         insights.append("📊 **Restrição Metabólica:** Paciente com distúrbio do metabolismo glicídico. Necessita de monitorização capilar frequente e formulações com menor índice de carboidratos simples.")
 
-    # Alerta de Inconsistência Crítica (Jejum em Alto Risco)
     if via_atual == "Jejum" and risco in ["Alto", "Risco de Desnutrição", "Desnutrido"]:
         insights.append("🚨 **Alerta de Segurança do Paciente:** Paciente classificado com risco nutricional estabelecido e mantido em Jejum. Risco severo de depleção de glicogênio hepático e catabolismo muscular acelerado se ultrapassar 24 horas sem terapia nutricional ativa.")
 
@@ -170,7 +166,6 @@ if menu == "Módulo 1: Triagem e Admissão":
     if 'passo_atual' not in st.session_state:
         st.session_state.passo_atual = "identificacao"
     
-    # Barra de ferramentas para controle e rastreabilidade do fluxo
     col_nav1, col_nav2 = st.columns([1, 5])
     with col_nav1:
         if st.session_state.passo_atual != "identificacao":
@@ -224,23 +219,23 @@ if menu == "Módulo 1: Triagem e Admissão":
                     st.session_state.passo_atual = "anamnese"
                     st.rerun()
 
-    # ETAPA 2: ANAMNESE E VALIDAÇÃO AUTOMÁTICA DA IDADE
+    # ETAPA 2: ANAMNESE E VALIDAÇÃO DA IDADE REORDENADA
     elif st.session_state.passo_atual == "anamnese":
         st.subheader("Anamnese Clínica e Perfil Antropométrico")
         st.markdown(f"**Paciente Selecionado:** {st.session_state.dados_triagem_base['Nome']} | **Leito:** {st.session_state.dados_triagem_base['Leito']}")
         
         with st.form("form_passo_2"):
-            f_data_nasc = st.date_input("14. Data de Nascimento do Paciente *", value=date(1980, 1, 1), min_value=date(1900, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
-            
-            # Cálculo imediato e demonstrativo pedagógico da idade na identificação
-            anos, meses = calcular_idade_detalhada(f_data_nasc)
-            st.success(f"📌 **Idade Calculada para Identificação:** {anos} anos e {meses} meses.")
-            
-            st.markdown("---")
             f_diag = st.text_area("10. Diagnóstico Médico de Admissão *")
             f_comorbidades = st.multiselect("11. Comorbidades Crônicas Associadas *", ["NÃO POSSUI COMORBIDADE", "Acamado(a)", "Diabetes mellitus", "Drogadição (SPA)", "Etilismo", "Hipertensão arterial sistêmica", "Infarto", "Insuficiência cardíaca", "Obesidade", "Tabagismo", "Doença autoimune", "Doença hematológica", "Doença hepática ou gastrointestinal", "Doença nefrológica", "Doença neoplásica", "Doença neurológica", "Doença psiquiátrica", "Doença respiratória", "Doença sexualmente transmissível", "Outra doença cardiovascular", "Outra doença endócrina", "Doença gestacional - Hipertensão arterial sistêmica", "Doença gestacional - Diabetes mellitus", "Doença gestacional - Outra doença endócrina", "Doença gestacional - Outra(s) doença(s)", "Outra(s) doença(s)"])
             f_peso_hab = st.number_input("12. Peso Habitual Referido (kg) *", min_value=0.0, step=0.1, format="%.2f")
             f_altura = st.number_input("13. Altura Estimada/Referida (m) *", min_value=0.0, step=0.01, format="%.2f")
+            
+            # Pergunta 14 posicionada rigorosamente no local correto (após a 13 e antes dos gatilhos de triagem)
+            f_data_nasc = st.date_input("14. Data de Nascimento do Paciente *", value=date(1980, 1, 1), min_value=date(1900, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
+            
+            # Sinalização imediata do cálculo dinâmico da idade na identificação
+            anos, meses = calcular_idade_detalhada(f_data_nasc)
+            st.success(f"📌 **Idade Calculada para Identificação:** {anos} anos e {meses} meses.")
             
             btn_proximo_2 = st.form_submit_button("Vincular e Chamar Questionário de Triagem Alvo ➔")
             
@@ -261,7 +256,7 @@ if menu == "Módulo 1: Triagem e Admissão":
                     st.session_state.passo_atual = f"triagem_{faixa_calculada}"
                 st.rerun()
 
-    # ETAPA 3A: TRIAGEM PEDRIÁTRICA (STRONG KIDS) COM EXIBIÇÃO DA MATRIZ DE RISCO
+    # ETAPA 3A: TRIAGEM PEDIÁTRICA (STRONG KIDS)
     elif st.session_state.passo_atual == "triagem_<=18":
         st.subheader("🧬 Rastreamento de Risco Pediátrico: Ferramenta STRONG KIDS")
         
@@ -270,7 +265,7 @@ if menu == "Módulo 1: Triagem e Admissão":
         """)
         
         with st.form("form_strong"):
-            q17_sel = st.radio("17. 1. Avaliação nutricional clínica subjetiva: A criança aparenta perda de tecido adiposo ou massa muscular subcutânea?", ["Não (0 ponto)", "Sim (1 ponto)"])
+            q17_sel = st.radio("17. 1. Avaliação nutricional clinical subjetiva: A criança aparenta perda de tecido adiposo ou massa muscular subcutânea?", ["Não (0 ponto)", "Sim (1 ponto)"])
             q18_sel = st.radio("18. 2. Presença de patologia de base classificada em alto risco nutricional ou proposta de cirurgia de grande porte?", ["Não (0 ponto)", "Sim (2 pontos)"])
             q19_sel = st.radio("19. 3. Ingestão e perdas: Apresenta diarreia severa, vômitos reincidentes ou ingestão oral deficitária nos últimos dias?", ["Não (0 ponto)", "Sim (1 ponto)"])
             q20_sel = st.radio("20. 4. Evolução ponderal recente: Responsáveis referem perda de peso involuntária ou incapacidade de ganho estatural-ponderal?", ["Não (0 ponto)", "Sim (1 ponto)"])
@@ -279,27 +274,26 @@ if menu == "Módulo 1: Triagem e Admissão":
             if btn:
                 escore = ("Sim" in q17_sel) + ("2 pontos" in q18_sel)*2 + ("Sim" in q19_sel) + ("Sim" in q20_sel)
                 
-                # Matriz Exclusiva Escore x Risco x Intervenção solicitada
                 if escore >= 4:
                     risco = "Alto"
                     intervencao = (
-                        "1. Consultar médico ou nutricionista para diagnóstico nutricional completo.\n"
-                        "2. Orientação nutricional individualizada e seguimento restrito.\n"
-                        "3. Iniciar suplementação oral imediata até conclusão do diagnóstico nutricional definitivo."
+                        "1. Consultar médico ou nutricionista para diagnóstico nutricional completo\n"
+                        "2. Orientação nutricional individualizada e seguimento\n"
+                        "3. Iniciar suplementação oral até conclusão do diagnóstico nutricional"
                     )
                 elif 1 <= escore <= 3:
                     risco = "Médio"
                     intervencao = (
-                        "1. Consultar médico assistente para diagnóstico completo.\n"
-                        "2. Considerar início de intervenção nutricional precoce.\n"
-                        "3. Checar peso corporal à beira-leito 2x/semana.\n"
-                        "4. Reavaliar de forma compulsória o risco nutricional após 1 semana."
+                        "1. Consultar médico para diagnóstico completo\n"
+                        "2. Considerar intervenção nutricional\n"
+                        "3. Checar peso 2x/semana\n"
+                        "4. Reavaliar o risco nutricional após 1 semana"
                     )
                 else:
                     risco = "Baixo"
                     intervencao = (
-                        "1. Checar peso corporal regulamente.\n"
-                        "2. Reavaliar o risco nutricional global em 1 semana."
+                        "1. Checar peso regularmente\n"
+                        "2. Reavaliar risco em 1 semana"
                     )
                     
                 st.session_state.dados_triagem_base.update({"Escore Triagem": escore, "Risco": risco, "Intervencao_Obrigatoria": intervencao})
@@ -311,7 +305,7 @@ if menu == "Módulo 1: Triagem e Admissão":
         st.subheader("🫁 Triagem de Risco no Adulto: Ferramenta NRS 2002")
         
         st.info("""
-        🔬 **Descritivo Explicativo HMP / USP:** O Nutritional Risk Screening (NRS 2002) correlaciona o grau de desnutrição atual (baseado em IMC, ingestão e perda ponderal) com o estresse metabólico imposto pela gravidade da doença. Escore >= 3 define risco e necessidade de plano de cuidado imediato.
+        🔬 **Descritivo Explicativo HMP / USP:** O Nutritional Risk Screening (NRS 2002) correlaciona o grau de desnutrição atual com o estresse metabólico imposto pela gravidade da doença. Escore >= 3 define risco e necessidade de plano de cuidado imediato.
         """)
         
         with st.form("form_nrs"):
@@ -335,7 +329,7 @@ if menu == "Módulo 1: Triagem e Admissão":
         st.subheader("👴 Avaliação Geriátrica: Mini Avaliação Nutricional (MNA®)")
         
         st.info("""
-        🔬 **Descritivo Explicativo HMP / USP:** A triagem MNA® é o padrão-ouro validado internacionalmente para idosos hospitalizados. Avalia perdas funcionais, cognitivas, restrições alimentares e biometria, visando intervenções precoces contra a desnutrição na senescência.
+        🔬 **Descritivo Explicativo HMP / USP:** A triagem MNA® é o padrão-ouro validado internacionalmente para idosos hospitalizados. Avalia perdas funcionais, cognitivas, restrições alimentares e biometria.
         """)
         
         with st.form("form_mna_completo"):
@@ -389,7 +383,6 @@ if menu == "Módulo 1: Triagem e Admissão":
             st.markdown(f"### Identificação do Paciente no Laudo: **{db['Nome']}** ({db['Idade Anos']} anos e {db['Idade Meses']} meses)")
             st.warning(f"**Resultado Triagem:** Classificação de Risco: **{db['Risco']}** | Pontuação: **{db['Escore Triagem']}**")
             
-            # Caixa informativa das diretrizes de intervenção obrigatória (Matriz Strong ou Protocolo HMP)
             st.info(f"📋 **Intervenção de Conduta Obrigatória Sugerida:**\n\n{db['Intervencao_Obrigatoria']}")
             
             f_nivel = st.selectbox("38. Classificação Definitiva do Nível de Assistência *", ["Primário", "Secundário A", "Secundário B", "Terciário"])
@@ -512,8 +505,8 @@ elif menu == "Módulo 3: Avaliação EMTN":
                 with col2:
                     nova_conduta = st.text_area("Evolução descritiva da EMTN / Ajustes de Metas:")
                 
-                btn_reaval = st.form_submit_button("Submeter e Atualizar Grade de Vigilância")
-                if btn_reaval:
+                button_reaval = st.form_submit_button("Submeter e Atualizar Grade de Vigilância")
+                if button_reaval:
                     data_hoje_str = date.today().strftime("%d/%m/%Y")
                     st.session_state.banco_pacientes.at[idx_reaval, "Via Proposta"] = nova_via
                     st.session_state.banco_pacientes.at[idx_reaval, "Nível Assistência"] = manter_nivel
