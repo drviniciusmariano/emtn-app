@@ -135,16 +135,17 @@ def analisar_dados_com_ia(dados):
     escore = dados.get("Escore Triagem", 0)
     risco = dados.get("Risco", "Baixo")
     via_atual = dados.get("Via Alimentação", "Oral")
+    faixa_etaria = dados.get("Faixa Etária", "19-59")
     
     insights = []
     if idade >= 80:
         insights.append("⚠️ **Alerta Geriátrica Avançada:** Paciente muito idoso. Alta propensão à sarcopenia severa e perda de reserva funcional dinâmica. Monitorar deambulação.")
-    if "Etilismo" in comorbidades or "Acamado(a)" in comorbidades or escore >= 3:
-        insights.append("🛑 **Risco de Síndrome de Realimentação:** Paciente crítico com score elevado. Recomendado iniciar aporte calórico escalonado (15-20 kcal/kg/dia) e monitorar rigidamente Fósforo, Magnésio e Potássio nas primeiras 72 horas.")
+    if "Etilismo" in comorbidades or "Acamado(a)" in comorbidades or (faixa_etaria == ">= 60" and escore <= 11) or (faixa_etaria != ">= 60" and escore >= 3):
+        insights.append("🛑 **Risco de Síndrome de Realimentação:** Paciente crítico ou em risco nutricional estabelecido. Recomendado iniciar aporte calórico escalonado (15-20 kcal/kg/dia) e monitorar rigidamente Fósforo, Magnésio e Potássio nas primeiras 72 horas.")
     if "Diabetes mellitus" in comorbidades:
         insights.append("📊 **Ajuste Metabólico:** Presença de Diabetes Mellitus. Recomenda-se fórmulas de menor índice glicêmico ou controle restrito da velocidade de infusão.")
-    if risco == "Alto" and via_atual == "Jejum":
-        insights.append("🚨 **Grave Contradição Clínica:** Paciente triado em Alto Risco Nutricional e mantido em Jejum. Risco severo de desnutrição intra-hospitalar acelerada se ultrapassar 24-48h.")
+    if (risco == "Alto" or risco == "Desnutrido") and via_atual == "Jejum":
+        insights.append("🚨 **Grave Contradição Clínica:** Paciente triado em Risco/Desnutrição e mantido em Jejum. Risco severo de desnutrição intra-hospitalar acelerada se ultrapassar 24-48h.")
     if not insights:
         insights.append("✅ **Estabilidade Clínica:** Parâmetros dentro da janela de segurança esperada para o nível de assistência atual.")
     return "\n\n".join(insights)
@@ -159,10 +160,28 @@ if menu == "Módulo 1: Triagem e Admissão":
     if 'passo_atual' not in st.session_state:
         st.session_state.passo_atual = "identificacao"
     
-    if st.button("🔄 Reiniciar Formulário", key="btn_reset"):
-        st.session_state.passo_atual = "identificacao"
-        if 'dados_triagem_base' in st.session_state: del st.session_state.dados_triagem_base
-        st.rerun()
+    # BARRA DE FERRAMENTAS DE NAVEGAÇÃO SUPERIOR (BOTÃO VOLTAR E REINICIAR)
+    col_nav1, col_nav2 = st.columns([1, 5])
+    with col_nav1:
+        if st.session_state.passo_atual != "identificacao":
+            if st.button("⬅️ Voltar Etapa", use_container_width=True):
+                if st.session_state.passo_atual in ["triagem_<=18", "triagem_19-59", "triagem_>= 60"]:
+                    st.session_state.passo_atual = "anamnese"
+                elif st.session_state.passo_atual == "anamnese":
+                    st.session_state.passo_atual = "identificacao"
+                elif st.session_state.passo_atual == "conduta_final":
+                    faixa = st.session_state.dados_triagem_base.get("Faixa Etária", "19-59")
+                    st.session_state.passo_atual = f"triagem_{faixa}"
+                elif st.session_state.passo_atual == "laudo_impressao":
+                    st.session_state.passo_atual = "conduta_final"
+                st.rerun()
+    with col_nav2:
+        if st.button("🔄 Reiniciar Formulário Completo", key="btn_reset"):
+            st.session_state.passo_atual = "identificacao"
+            if 'dados_triagem_base' in st.session_state: del st.session_state.dados_triagem_base
+            st.rerun()
+
+    st.markdown("---")
 
     if st.session_state.passo_atual == "identificacao":
         with st.form("form_passo_1"):
@@ -194,10 +213,8 @@ if menu == "Módulo 1: Triagem e Admissão":
                     
                     if f_momento == "Avaliação Inicial":
                         st.session_state.passo_atual = "anamnese"
-                    elif f_momento == "Reavaliação":
-                        st.session_state.passo_atual = "avaliacao_detalhada_secao"
-                    elif f_momento == "Evolução Nutricional":
-                        st.session_state.passo_atual = "evolucao_direta_secao"
+                    else:
+                        st.session_state.passo_atual = "conduta_final"
                     st.rerun()
 
     elif st.session_state.passo_atual == "anamnese":
@@ -210,7 +227,7 @@ if menu == "Módulo 1: Triagem e Admissão":
             f_peso_hab = st.number_input("12. Peso habitual (kg) *", min_value=0.0, step=0.1, format="%.2f")
             f_altura = st.number_input("13. Altura referida (m) *", min_value=0.0, step=0.01, format="%.2f")
             
-            f_data_nasc = st.date_input("14. Data de Nascimento *", value=date(1945, 1, 1), min_value=date(1900, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
+            f_data_nasc = st.date_input("14. Data de Nascimento *", value=date(1965, 1, 1), min_value=date(1900, 1, 1), max_value=date.today(), format="DD/MM/YYYY")
             
             btn_proximo_2 = st.form_submit_button("Avançar para Triagem Específica ➔")
             
@@ -234,7 +251,7 @@ if menu == "Módulo 1: Triagem e Admissão":
             q18_sel = st.radio("18. 2. Doença (com alto risco nutricional) ou cirurgia de grande porte?", ["Não (0 ponto)", "Sim (2 ponto)"])
             q19_sel = st.radio("19. 3. Ingestão nutricional e/ou perda nos últimos dias?", ["Não (0 ponto)", "Sim (1 ponto)"])
             q20_sel = st.radio("20. 4. Refere perda de peso ou ganho insuficiente nas últimas semanas?", ["Não (0 ponto)", "Sim (1 ponto)"])
-            btn = st.form_submit_button("Calcular")
+            btn = st.form_submit_button("Calcular Escore Strong Kids ➔")
             if btn:
                 escore = ("Sim" in q17_sel) + ("Sim" in q18_sel)*2 + ("Sim" in q19_sel) + ("Sim" in q20_sel)
                 risco = "Baixo" if escore==0 else ("Médio" if escore<=3 else "Alto")
@@ -245,12 +262,11 @@ if menu == "Módulo 1: Triagem e Admissão":
     elif st.session_state.passo_atual == "triagem_19-59":
         st.subheader("🫁 NRS 2002 (Idade 19-59)")
         with st.form("form_nrs"):
-            f_peso_atual = st.number_input("23. Peso atual (kg) *", min_value=0.0, step=0.1)
             nrs_q1 = st.checkbox("1) O IMC é < 20,5 kg/m²?")
             nrs_q2 = st.checkbox("2) O paciente perdeu peso nos 3 últimos meses?")
             nrs_q3 = st.checkbox("3) O paciente teve sua ingestão dietética reduzida na última semana?")
             nrs_q4 = st.checkbox("4) O paciente é gravemente doente?")
-            btn = st.form_submit_button("Gravar")
+            btn = st.form_submit_button("Calcular Escore NRS 2002 ➔")
             if btn:
                 escore = 3 if (nrs_q1 or nrs_q2 or nrs_q3 or nrs_q4) else 0
                 risco = "Alto" if escore >= 3 else "Baixo"
@@ -259,13 +275,46 @@ if menu == "Módulo 1: Triagem e Admissão":
                 st.rerun()
 
     elif st.session_state.passo_atual == "triagem_>= 60":
-        st.subheader("👴 MNA® (População Geriátrica ≥ 60)")
-        with st.form("form_mna"):
-            mna_a = st.selectbox("30. A. Diminuição da ingesta alimentar?", ["Sem diminuição (2 pts)", "Diminuição moderada (1 pt)", "Diminuição grave (0 pt)"])
-            mna_b = st.selectbox("31. B. Perda de peso nos últimos 3 meses?", ["Sem perda (3 pts)", "Perda 1-3kg (2 pts)", "Não sabe (1 pt)", "Perda >3kg (0 pt)"])
-            btn = st.form_submit_button("Gravar")
+        st.subheader("👴 Mini Avaliação Nutricional (MNA®) Completa — Triagem")
+        with st.form("form_mna_completo"):
+            mna_30 = st.selectbox("30. A. O paciente apresentou diminuição da ingesta alimentar nos últimos 3 meses por perda de apetite, problemas digestivos ou dificuldade para mastigar/engolir?", 
+                                  ["2 : Sem diminuição da ingesta", "1 : Diminuição moderada da ingesta", "0 : Diminuição grave da ingesta"])
+            
+            mna_31 = st.selectbox("31. B. Perda de peso nos últimos 3 meses?", 
+                                  ["3 : Sem perda de peso", "2 : Perda de peso entre 1 e 3 kg", "1 : Não sabe", "0 : Perda de peso superior a 3 kg"])
+            
+            mna_32 = st.selectbox("32. C. Mobilidade?", 
+                                  ["2 : Sai de casa / Normal", "1 : Anda, mas não sai de casa", "0 : Restrito ao leito ou à cadeira de rodas"])
+            
+            mna_33 = st.selectbox("33. D. Passou por algum estresse psicológico ou doença aguda nos últimos 3 meses?", 
+                                  ["2 : Não", "0 : Sim"])
+            
+            mna_34 = st.selectbox("34. E. Problemas neuropsicológicos?", 
+                                  ["2 : Sem problemas psicológicos", "1 : Demência ligeira", "0 : Demência ou depressão grave"])
+            
+            mna_35 = st.selectbox("35. F. Índice de Massa Corporal (IMC)? (peso/altura²)", 
+                                  ["3 : IMC >= 23 kg/m²", "2 : IMC de 21 a < 23 kg/m²", "1 : IMC de 19 a < 21 kg/m²", "0 : IMC < 19 kg/m²"])
+            
+            btn = st.form_submit_button("Calcular Classificação MNA® ➔")
             if btn:
-                st.session_state.dados_triagem_base.update({"Escore Triagem": 10, "Risco": "Médio"})
+                p_a = int(mna_30.split(" : ")[0])
+                p_b = int(mna_31.split(" : ")[0])
+                p_c = int(mna_32.split(" : ")[0])
+                p_d = int(mna_33.split(" : ")[0])
+                p_e = int(mna_34.split(" : ")[0])
+                p_f = int(mna_35.split(" : ")[0])
+                
+                escore_total = p_a + p_b + p_c + p_d + p_e + p_f
+                
+                # Critério oficial de classificação MNA (36 e 37)
+                if escore_total >= 12:
+                    risco = "Estado Nutricional Normal"
+                elif 8 <= escore_total <= 11:
+                    risco = "Risco de Desnutrição"
+                else:
+                    risco = "Desnutrido"
+                    
+                st.session_state.dados_triagem_base.update({"Escore Triagem": escore_total, "Risco": risco})
                 st.session_state.passo_atual = "conduta_final"
                 st.rerun()
 
@@ -277,6 +326,7 @@ if menu == "Módulo 1: Triagem e Admissão":
         st.markdown(f'<div class="ai-box"><h4>🤖 IA EMTN - Análise Clínica de Risco</h4><p style="white-space: pre-line;">{parecer_ia_gerado}</p></div>', unsafe_allow_html=True)
         
         with st.form("form_final"):
+            st.info(f"Escore Consolidado na Triagem: **{db['Escore Triagem']} pontos** | Classificação Nutricional: **{db['Risco']}**")
             f_nivel = st.selectbox("38. Classificação do Nível de Assistência *", ["Primário", "Secundário A", "Secundário B", "Terciário"])
             f_conduta = st.text_area("83. Conduta Terapêutica Adotada *")
             f_via_prop = st.selectbox("84. Via de Alimentação Proposta *", ["Oral", "Sonda Nasoenteral", "Gastrostomia", "Jejunostomia", "Parenteral periférica", "Parenteral central", "Jejum"])
@@ -322,7 +372,7 @@ if menu == "Módulo 1: Triagem e Admissão":
                 <h2 style="text-align: center;">HOSPITAL MUNICIPAL DE PAULÍNIA - LAUDO EMTN</h2>
                 <hr>
                 <p><b>Paciente:</b> {db['Nome']} | <b>Leito:</b> {db['Leito']} - {db['Setor']}</p>
-                <p><b>Risco Nutricional:</b> {db['Risco']} | <b>Assistência:</b> {db['Nível Assistência']}</p>
+                <p><b>Triagem / Escore:</b> {db['Risco']} ({db['Escore Triagem']} pts) | <b>Assistência:</b> {db['Nível Assistência']}</p>
                 <p><b>Via Proposta:</b> {db['Via Proposta']} | <b>Dieta:</b> {db['Dieta Prescrita']}</p>
                 <p><b>Parecer IA:</b> {db['Parecer_IA']}</p>
             </div>
@@ -352,17 +402,15 @@ elif menu == "Módulo 2: Prescrição e Evolução":
             st.success("Evolução registrada.")
 
 # --------------------------------------------------------------------------------------------------
-# MÓDULO 3: AVALIAÇÃO EMTN (REORGANIZADO COMO MÓDULO 3)
+# MÓDULO 3: AVALIAÇÃO EMTN
 # --------------------------------------------------------------------------------------------------
 elif menu == "Módulo 3: Avaliação EMTN":
     st.title("🎯 Módulo 3: Painel de Vigilância e Avaliação Supervisionada da EMTN")
-    st.markdown("Este painel agrupa **automaticamente** pacientes de alta complexidade regulados pelos critérios internos da EMTN: **Nível Secundário B / Terciário** ou em uso de **Sonda Nasoenteral (SNE) / Nutrição Parenteral**.")
     
     df = st.session_state.banco_pacientes
     if df.empty:
         st.info("Nenhum paciente admitido no sistema até o momento.")
     else:
-        # Aplicação exata das regras de filtragem clínica solicitadas
         criterio_nivel = df["Nível Assistência"].isin(["Secundário B", "Terciário"])
         criterio_via_admissao = df["Via Alimentação"].isin(["Sonda Nasoenteral", "Parenteral periférica", "Parenteral central"])
         criterio_via_proposta = df["Via Proposta"].isin(["Sonda Nasoenteral", "Parenteral periférica", "Parenteral central"])
@@ -404,11 +452,10 @@ elif menu == "Módulo 3: Avaliação EMTN":
                     st.rerun()
 
 # --------------------------------------------------------------------------------------------------
-# MÓDULO 4: PASSAGEM DE PLANTÃO COM EDIÇÃO RÁPIDA (REORGANIZADO COMO MÓDULO 4)
+# MÓDULO 4: PASSAGEM DE PLANTÃO COM EDIÇÃO RÁPIDA
 # --------------------------------------------------------------------------------------------------
 elif menu == "Módulo 4: Passagem de Plantão":
     st.title("📋 Módulo 4: Passagem de Plantão e Round da EMTN (Edição Rápida)")
-    st.info("💡 Clique diretamente nas células das colunas 'Leito', 'Dieta Prescrita' ou 'Notas_Plantao' para atualizar as informações em tempo real durante o round.")
     
     df = st.session_state.banco_pacientes
     if df.empty:
@@ -439,7 +486,7 @@ elif menu == "Módulo 4: Passagem de Plantão":
             st.rerun()
 
 # --------------------------------------------------------------------------------------------------
-# MÓDULO 5: DASHBOARD DE INDICADORES (REORGANIZADO COMO MÓDULO 5)
+# MÓDULO 5: DASHBOARD DE INDICADORES
 # --------------------------------------------------------------------------------------------------
 elif menu == "Módulo 5: Indicadores":
     st.title("📊 Módulo 5: Dashboard de Indicadores Epidemiológicos e de Qualidade")
