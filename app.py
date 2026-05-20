@@ -10,20 +10,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. BANCO DE DADOS DE USUÁRIOS (Crie aqui os logins da equipe)
-# Dica: O "Nome Completo" será usado automaticamente como o Avaliador no formulário
+# 2. BANCO DE DADOS DE USUÁRIOS (Corrigido: chaves fechadas e padrões underline)
 CONTA_USUARIOS = {
     "vinicius.mariano": {"senha": "casa0904", "nome_completo": "Dr. Vinícius Mariano"},
     "priscila.nutri": {"senha": "nutri1234", "nome_completo": "Nutricionista EMTN"},
     "resilda.enfermeira": {"senha": "enf1234", "nome_completo": "Enfermeira EMTN"},
-    "julia.lopes": {"senha": "julia1234", "nome completo": "Dra. Julia Lopes"},
-    "amanda.snd": {"senha": "snd1234", "nome completo": "Nutricionista SND"},
-    "carol.geriatria": {"senha": "geriatria1234", "nome completo": "Nutricionista Geriatria"},
-    "matheus.soberana": {"senha": "matheus1234", "nome completo": "Nutricionista - Soberana"},
-    "rafael.soberana": {"senha": "rafael1234", "nome completo": "Nutricionista - Soberana"},
-    "caren.soberana": {"senha": "caren1234", "nome completo": "Nutricionista - Soberana"},
-    "vanessa.soberana": {"senha": "vanessa1234", "nome completo": "Nutricionista - Soberana"}
-    
+    "julia.lopes": {"senha": "julia1234", "nome_completo": "Dra. Julia Lopes"},
+    "amanda.snd": {"senha": "snd1234", "nome_completo": "Nutricionista SND"},
+    "carol.geriatria": {"senha": "geriatria1234", "nome_completo": "Nutricionista Geriatria"},
+    "matheus.soberana": {"senha": "matheus1234", "nome_completo": "Nutricionista - Soberana"},
+    "rafael.soberana": {"senha": "rafael1234", "nome_completo": "Nutricionista - Soberana"},
+    "caren.soberana": {"senha": "caren1234", "nome_completo": "Nutricionista - Soberana"},
+    "vanessa.soberana": {"senha": "vanessa1234", "nome_completo": "Nutricionista - Soberana"}
+}
+
 # Controle de sessão para autenticação
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
@@ -69,7 +69,7 @@ if not st.session_state.autenticado:
     st.stop() # Trava o aplicativo aqui caso não esteja logado
 
 # -------------------------------------------------------------------------
-# APÓS O LOGIN: SEGUMENTO DO APLICATIVO COM IDENTIDADE VISUAL E REGRAS
+# APÓS O LOGIN: SEGUIMENTO DO APLICATIVO COM IDENTIDADE VISUAL E REGRAS
 # -------------------------------------------------------------------------
 
 # Injeção de CSS para customização das cores do Logotipo (Verde e Terracota)
@@ -98,7 +98,7 @@ if 'banco_pacientes' not in st.session_state:
             "Via Alimentação": "Sonda Nasoenteral", "Risco": "Alto", "Adequacao_Calorica": 88.0
         },
         {
-            "Avaliador": "Dra. Juliana Costa", "Data Admissão": "2026-05-14", "Nome": "Maria Oliveira", 
+            "Avaliador": "Nutricionista EMTN", "Data Admissão": "2026-05-14", "Nome": "Maria Oliveira", 
             "Sexo": "Feminino", "Setor": "UTI", "Leito": "105-B", "Faixa Etária": "> ou = 60", 
             "Via Alimentação": "Parenteral central", "Risco": "Alto", "Adequacao_Calorica": 92.0
         },
@@ -175,7 +175,6 @@ elif menu == "📝 Novo Protocolo":
         st.markdown("### 1. Dados Iniciais do Paciente")
         col1, col2 = st.columns(2)
         with col1:
-            # Trava o campo de avaliador com o nome de quem fez o login!
             st.text_input("Avaliador Responsável", value=st.session_state.nome_avaliador, disabled=True)
             nome_paciente = st.text_input("Nome Completo do Paciente *")
             sexo = st.selectbox("Sexo Biológico *", ["Masculino", "Feminino"])
