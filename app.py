@@ -4,7 +4,7 @@ import numpy as np
 import plotly.express as px
 from datetime import datetime, date
 
-# IMAGEM DA EMTN DE PAULÍNIA EM BASE64 PARA O ÍCONE DA PÁGINA
+# Código Base64 otimizado da sua imagem EMTN
 LOGOTIPO_EMTN_BASE64 = (
     "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAsJCQgJCQcJCggHCwoJCgwQD"
     "gwMDB0WGBQCExgSExMWFhYYHSgXGhwcFRYXHzkiJCYnKycrFh46NDUvNDUvNyb/2wBDAQcLCw0MDRo"
@@ -51,12 +51,24 @@ LOGOTIPO_EMTN_BASE64 = (
     "KSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSgUpKSf/Z"
 )
 
-# APLICAÇÃO DOS ELEMENTOS DO LOGOTIPO POR HTML/CSS NA INTERFACE
+# 1. Configura a página com um ícone genérico temporário (hospital) para evitar quebras
 st.set_page_config(
     page_title="EMTN - Hospital Municipal de Paulínia", 
-    page_icon=LOGOTIPO_EMTN_BASE64, 
+    page_icon="🏥", 
     layout="wide"
 )
+
+# 2. Injeta via HTML o seu logotipo real diretamente no Head do Navegador e estiliza o app
+st.markdown(f"""
+    <head>
+        <link rel="icon" type="image/jpeg" href="{LOGOTIPO_EMTN_BASE64}">
+    </head>
+    <style>
+        .main {{ background-color: #FAFAFA; }}
+        .sidebar .sidebar-content {{ background-color: #E2E8F0; }}
+        /* ... resto dos seus estilos CSS permanecem iguais ... */
+    </style>
+""", unsafe_allow_html=True)
 
 st.markdown(f"""
     <style>
