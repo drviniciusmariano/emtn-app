@@ -79,15 +79,15 @@ if st.sidebar.button("🔒 Sair do Sistema"):
     st.rerun()
 
 # --------------------------------------------------------------------------------------------------
-# MÓDULO 1: TRIAGEM E ADMISSÃO DE PACIENTES
+# MÓDULO 1: TRIAGEM E ADMISSÃO DE PACIENTES (CORRIGIDO: REATIVIDADE DE SEÇÕES)
 # --------------------------------------------------------------------------------------------------
 if menu == "Módulo 1: Triagem e Admissão":
     st.title("🧬 Módulo 1: Triagem e Admissão de Pacientes")
-    st.markdown("Ficha de admissão padronizada EMTN com aplicação imediata de algoritmos preditivos de risco.")
+    st.markdown("Ficha de admissão padronizada EMTN com direcionamento em tempo real de seções.")
     
-    with st.form("form_admissao"):
-        st.subheader("Identificação e Dados Iniciais")
-        # Sequência exata do formulário PDF fornecido
+    # SEÇÃO A: Dados Iniciais e Gerais do Paciente (Dentro do Form para organizar os inputs padrão)
+    with st.form("dados_base_admissao"):
+        st.subheader("Identificação e Anamnese")
         f_avaliador = st.text_input("1. Avaliador *", value=st.session_state.nome_avaliador, disabled=True)
         f_data_adm = st.date_input("2. Data de Admissão *")
         f_nome = st.text_input("3. Nome *")
@@ -98,23 +98,38 @@ if menu == "Módulo 1: Triagem e Admissão":
         f_via = st.selectbox("8. Via de alimentação *", ["Oral", "Sonda Nasoenteral", "Gastrostomia", "Jejunostomia", "Parenteral periférica", "Parenteral central", "Jejum"])
         f_momento = st.selectbox("9. Momento *", ["Avaliação Inicial", "Reavaliação", "Evolução Nutricional"])
         
-        st.markdown("---")
-        st.subheader("Anamnese")
         f_diag = st.text_area("10. Diagnóstico *")
         f_comorbidades = st.multiselect("11. Comorbidades *", ["NÃO POSSUI COMORBIDADE", "Acamado(a)", "Diabetes mellitus", "Drogadição (SPA)", "Etilismo", "Hipertensão arterial sistemica", "Infarto", "Insuficiência cardíaca", "Obesidade", "Tabagismo", "Doença autoimune", "Doença hematológica", "Doença hepática ou gastrointestinal", "Doença nefrológica", "Doença neoplásica", "Doença neurológica", "Doença psiquiátrica", "Doença respiratória", "Doença sexualmente transmissível"])
         f_peso_hab = st.number_input("12. Peso habitual (kg) *", min_value=0.0, step=0.1, format="%.2f")
         f_altura = st.number_input("13. Altura referida (m) *", min_value=0.0, step=0.01, format="%.2f")
         f_data_nasc = st.date_input("14. Data de Nascimento *")
         f_idade_texto = st.text_input("15. Idade * (Descreva sempre meses ou anos)")
-        f_faixa = st.radio("16. Faixa Etária *", ["<=18", "19-59", ">= 60"])
         
+        proximo = st.form_submit_button("Avançar para Triagem Específica ➔")
+
+    # Salva temporariamente os dados da primeira etapa na memória do app
+    if proximo or 'dados_etapa1' in st.session_state:
+        if proximo:
+            st.session_state.dados_etapa1 = {
+                "Avaliador": f_avaliador, "Data Admissão": str(f_data_adm), "Nome": f_nome, "Sexo": f_sexo,
+                "Setor": f_setor, "Leito": f_leito, "Data Triagem": str(f_data_triagem), "Via Alimentação": f_via,
+                "Momento": f_momento, "Diagnóstico": f_diag, "Comorbidades": ", ".join(f_comorbidades),
+                "Peso Habitual": f_peso_hab, "Altura Referida": f_altura, "Data Nascimento": str(f_data_nasc),
+                "Idade": f_idade_texto
+            }
+
         st.markdown("---")
-        # DIRECIONAMENTO CONFORME FAIXA ETÁRIA DO PROTOCOLO ORIGINAL
+        st.subheader("📋 Seção de Triagem de Risco e Conduta")
+        
+        # ATENÇÃO: A pergunta 16 fica FORA de formulários para forçar o Streamlit a redesenhar a tela na hora!
+        f_faixa = st.radio("16. Selecione a Faixa Etária para abrir o Protocolo correto: *", ["<=18", "19-59", ">= 60"], index=0)
+        
         escore_calculado = 0
         risco_final = "Baixo"
         
+        # SEÇÃO CONDICIONAL EXATA: PEDIATRIA
         if f_faixa == "<=18":
-            st.subheader("Screening Tool Risk Nutritional Status and Growth - STRONG KIDS")
+            st.markdown("<span style='color:#4D6452; font-weight:bold; font-size:18px;'>🧬 Screening Tool Risk Nutritional Status and Growth (STRONG KIDS)</span>", unsafe_allow_html=True)
             q17 = st.radio("17. 1. Avaliação nutricional subjetiva: a criança parece ter déficit nutricional?", ["Não (0 ponto)", "Sim (1 ponto)"])
             q18 = st.radio("18. 2. Doença (com alto risco nutricional) ou cirurgia de grande porte?", ["Não (0 ponto)", "Sim (2 ponto)"])
             q19 = st.radio("19. 3. Ingestão nutricional e/ou perda nos últimos dias?", ["Não (0 ponto)", "Sim (1 ponto)"])
@@ -123,8 +138,9 @@ if menu == "Módulo 1: Triagem e Admissão":
             if escore_calculado >= 4: risco_final = "Alto"
             elif escore_calculado >= 1: risco_final = "Médio"
             
+        # SEÇÃO CONDICIONAL EXATA: ADULTO
         elif f_faixa == "19-59":
-            st.subheader("Triagem Nutricional - NRS 2002")
+            st.markdown("<span style='color:#4D6452; font-weight:bold; font-size:18px;'>🫁 Triagem Nutricional - NRS 2002</span>", unsafe_allow_html=True)
             st.info("Etapa 1. Triagem inicial")
             nrs_q1 = st.checkbox("O IMC é < 20,5 kg/m²?")
             nrs_q2 = st.checkbox("O paciente perdeu peso nos 3 últimos meses?")
@@ -138,15 +154,20 @@ if menu == "Módulo 1: Triagem e Admissão":
                 escore_calculado = int(q27[8]) + int(q28[8])
                 if escore_calculado >= 3: risco_final = "Alto"
                 else: risco_final = "Médio"
+            else:
+                st.success("Triagem Inicial Negativa. Paciente classificado em Baixo Risco.")
                 
+        # SEÇÃO CONDICIONAL EXATA: IDOSO
         elif f_faixa == ">= 60":
-            st.subheader("Mini Nutritional Assessment - MNA®")
+            st.markdown("<span style='color:#4D6452; font-weight:bold; font-size:18px;'>👴 Mini Nutritional Assessment - MNA®</span>", unsafe_allow_html=True)
             mna_a = st.selectbox("A. Diminuição da ingesta alimentar nos últimos 3 meses por perda de apetite?", ["Sem diminuição (0 ponto)", "Diminuição moderada (1 ponto)", "Diminuição grave (2 pontos)"])
             mna_b = st.selectbox("B. Perda de peso nos últimos 3 meses?", ["Perda > 3kg (0 ponto)", "Não sabe (1 ponto)", "Perda entre 1 e 3kg (2 pontos)", "Sem perda de peso (3 pontos)"])
             mna_c = st.selectbox("C. Mobilidade *", ["Restrito ao leito ou cadeira (0 ponto)", "Deambula mas não sai de casa (1 ponto)", "Normal (2 pontos)"])
             mna_d = st.selectbox("D. Passou por algum estresse psicológico ou doença aguda?", ["Sim (0 ponto)", "Não (2 pontos)"])
             mna_e = st.selectbox("E. Problemas neuropsicológicos?", ["Demência ou depressão grave (0 ponto)", "Demência ligeira (1 ponto)", "Sem problemas (2 pontos)"])
             mna_f = st.selectbox("F. Índice de Massa Corporal - IMC", ["IMC < 19 (0 ponto)", "19 <= IMC < 21 (1 ponto)", "21 <= IMC < 23 (2 pontos)", "IMC >= 23 (3 pontos)"])
+            
+            # Captura dinâmica de pontos baseada no caractere da string
             escore_calculado = int(mna_a[-8]) + int(mna_b[-8]) + int(mna_c[-8]) + int(mna_d[-8]) + int(mna_e[-8]) + int(mna_f[-8])
             if escore_calculado <= 7: risco_final = "Alto"
             elif escore_calculado <= 11: risco_final = "Médio"
@@ -157,33 +178,32 @@ if menu == "Módulo 1: Triagem e Admissão":
         f_nivel = st.selectbox("38. Nível de Assistência *", ["Primário", "Secundário A", "Secundário B", "Terciário"])
         f_via_prop = st.selectbox("84. Via de alimentação proposta *", ["Oral", "Sonda Nasoenteral", "Gastrostomia", "Jejunostomia", "Parenteral periférica", "Parenteral central", "Jejum"])
         f_dieta_prescrita = st.text_input("Dieta / Fórmula Específica Prescrita *")
-        
-        btn_admitir = st.form_submit_button("Salvar Admissão e Processar Alertas")
-        
-        if btn_admitir:
-            # Cálculo Automatizado de IMC
-            imc_calculado = 0.0
-            if f_altura > 0:
-                imc_calculado = f_peso_hab / (f_altura ** 2)
+
+        if st.button("Finalizar e Registrar Admissão no HMP 💾"):
+            d1 = st.session_state.dados_etapa1
             
-            # Cálculo de Meta Calórica Dinâmica Padrão do Manual do HMP
-            meta_calorica_sugerida = f_peso_hab * 25.0 if f_peso_hab > 0 else 0.0
+            # Cálculo de IMC e Meta Calórica Dinâmica automatizado em tempo real
+            imc_calculado = d1["Peso Habitual"] / (d1["Altura Referida"] ** 2) if d1["Altura Referida"] > 0 else 0.0
             
             novo_paciente = {
-                "Avaliador": st.session_state.nome_avaliador, "Data Admissão": str(f_data_adm), "Nome": f_nome, 
-                "Sexo": f_sexo, "Setor": f_setor, "Leito": f_leito, "Data Triagem": str(f_data_triagem), 
-                "Via Alimentação": f_via, "Momento": f_momento, "Diagnóstico": f_diag, "Comorbidades": ", ".join(f_comorbidades), 
-                "Peso Habitual": f_peso_hab, "Altura Referida": f_altura, "Data Nascimento": str(f_data_nasc), 
-                "Idade": f_idade_texto, "Faixa Etária": f_faixa, "Escore Triagem": escore_calculado, "Risco": risco_final, 
-                "Nível Assistência": f_nivel, "Via Proposta": f_via_prop, "Dieta Prescrita": f_dieta_prescrita, "Adequacao_Calorica": 100.0
+                "Avaliador": d1["Avaliador"], "Data Admissão": d1["Data Admissão"], "Nome": d1["Nome"], 
+                "Sexo": d1["Sexo"], "Setor": d1["Setor"], "Leito": d1["Leito"], "Data Triagem": d1["Data Triagem"], 
+                "Via Alimentação": d1["Via Alimentação"], "Momento": d1["Momento"], "Diagnóstico": d1["Diagnóstico"], 
+                "Comorbidades": d1["Comorbidades"], "Peso Habitual": d1["Peso Habitual"], "Altura Referida": d1["Altura Referida"], 
+                "Data Nascimento": d1["Data Nascimento"], "Idade": d1["Idade"], "Faixa Etária": f_faixa, 
+                "Escore Triagem": escore_calculado, "Risco": risco_final, "Nível Assistência": f_nivel, 
+                "Via Proposta": f_via_prop, "Dieta Prescrita": f_dieta_prescrita, "Adequacao_Calorica": 100.0
             }
             
             st.session_state.banco_pacientes = pd.concat([st.session_state.banco_pacientes, pd.DataFrame([novo_paciente])], ignore_index=True)
-            st.success(f"Paciente {f_nome} admitido com sucesso no sistema!")
+            st.success(f"Prontuário de {d1['Nome']} integrado com sucesso!")
             
-            # ALERTA VISUAL SE FOR TERCIÁRIO / RISCO ALTO
             if f_nivel == "Terciário" or risco_final == "Alto":
-                st.markdown(f"<div style='padding:20px; background-color:#F8D7DA; color:#721C24; border-radius:8px; font-weight:bold; border-left:8px solid #DC3545;'>🛑 ALERTA DE RISCO CRÍTICO (NÍVEL TERCIÁRIO): Paciente {f_nome} classificado em Alto Risco. Priorizar avaliação clínica em até 24 horas!</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='padding:20px; background-color:#F8D7DA; color:#721C24; border-radius:8px; font-weight:bold; border-left:8px solid #DC3545;'>🛑 ALERTA VERMELHO: Paciente {d1['Nome']} é de nível Terciário/Risco Alto!</div>", unsafe_allow_html=True)
+            
+            # Limpa o estado para o próximo preenchimento
+            del st.session_state.dados_etapa1
+            st.rerun()
 
 # --------------------------------------------------------------------------------------------------
 # MÓDULO 2: PRESCRIÇÃO E EVOLUÇÃO CLÍNICA DIÁRIA
