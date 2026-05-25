@@ -436,9 +436,6 @@ elif menu == "Módulo 1: Triagem e Admissão":
             f_leito        = st.text_input("6. Identificação do Leito *")
             f_data_triagem = st.date_input("7. Data Real da Triagem EMTN", format="DD/MM/YYYY")
             f_via          = st.selectbox("8. Via de Alimentação de Entrada *", ["Oral","Sonda Nasoenteral","Gastrostomia","Jejunostomia","Parenteral periférica","Parenteral central","Jejum"])
-            st.markdown("---")
-            f_momento = st.radio("9. Qual o momento da avaliação atual? *", ["Avaliação Inicial","Reavaliação","Evolução Nutricional"])
-
             if st.form_submit_button("Avançar para Dados Clínicos e Idade ➔"):
                 if not f_nome or not f_leito:
                     st.error("Preencha os campos obrigatórios: Nome e Leito.")
@@ -448,7 +445,7 @@ elif menu == "Módulo 1: Triagem e Admissão":
                         "Data Admissão": f_data_adm.strftime("%Y-%m-%d"),
                         "Nome": f_nome, "Sexo": f_sexo, "Setor": f_setor, "Leito": f_leito,
                         "Data Triagem": f_data_triagem.strftime("%Y-%m-%d"),
-                        "Via Alimentação": f_via, "Momento": f_momento,
+                        "Via Alimentação": f_via, "Momento": "Avaliação Inicial",
                         "Notas_Plantao": "", "Ultima_Reavaliacao": "Não Reavaliado",
                     }
                     st.session_state.passo_atual = "anamnese"
@@ -504,14 +501,7 @@ elif menu == "Módulo 1: Triagem e Admissão":
                     "Data Nascimento": f_data_nasc.strftime("%Y-%m-%d"),
                     "Idade Anos": anos, "Idade Meses": meses, "Faixa Etária": faixa_calculada,
                 })
-                if st.session_state.dados_triagem_base["Momento"] in ["Reavaliação","Evolução Nutricional"]:
-                    st.session_state.dados_triagem_base.update({
-                        "Escore Triagem": 0, "Risco": "Acompanhamento Continuado",
-                        "Intervencao_Obrigatoria": "Manutenção das condutas prévias e reavaliação de metas diárias.",
-                    })
-                    st.session_state.passo_atual = "conduta_final"
-                else:
-                    st.session_state.passo_atual = f"triagem_{faixa_calculada}"
+                st.session_state.passo_atual = f"triagem_{faixa_calculada}"
                 st.rerun()
 
     # ------------------------------------------------------------------
