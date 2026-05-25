@@ -72,9 +72,17 @@ if 'banco_pacientes' not in st.session_state:
 
 # DICIONÁRIO DE USUÁRIOS
 CONTA_USUARIOS = {
+    CONTA_USUARIOS = {
     "vinicius.mariano": {"senha": "casa0904", "nome_completo": "Dr. Vinícius Mariano"},
-    "priscila.emtn": {"senha": "hmp123", "nome_completo": "Dra. Priscila EMTN"},
-    "julia.emtn": {"senha": "hmp123", "nome_completo": "Nutr. Júlia EMTN"}
+    "priscila.nutri": {"senha": "nutri1234", "nome_completo": "Nutri. Priscila"},
+    "resilda.enfermeira": {"senha": "enf1234", "nome_completo": "Enf. Resilda"},
+    "julia.lopes": {"senha": "julia1234", "nome_completo": "Júlia Lopes"},
+    "amanda.snd": {"senha": "snd1234", "nome_completo": "Amanda SND"},
+    "carol.geriatria": {"senha": "geriatria1234", "nome_completo": "Carol Geriatria"},
+    "matheus.soberana": {"senha": "matheus1234", "nome_completo": "Matheus Soberana"},
+    "rafael.soberana": {"senha": "rafael1234", "nome_completo": "Rafael Soberana"},
+    "caren.soberana": {"senha": "caren1234", "nome_completo": "Caren Soberana"},
+    "vanessa.soberana": {"senha": "vanessa1234", "nome_completo": "Vanessa Soberana"}
 }
 
 if 'autenticado' not in st.session_state:
