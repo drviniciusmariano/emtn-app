@@ -32,6 +32,7 @@ def init_db():
         Escore_Triagem INTEGER, Risco TEXT, Intervencao_Obrigatoria TEXT,
         Nivel_Assistencia TEXT, Via_Proposta TEXT, Dieta_Prescrita TEXT, Conduta TEXT,
         Adequacao_Calorica REAL DEFAULT 100.0, Parecer_IA TEXT,
+        Suplemento TEXT DEFAULT '', Agua_ml TEXT DEFAULT '',
         Notas_Plantao TEXT, Ultima_Reavaliacao TEXT
     )''')
     c.execute('''CREATE TABLE IF NOT EXISTS historico_alta (
@@ -44,8 +45,19 @@ def init_db():
         Escore_Triagem INTEGER, Risco TEXT, Intervencao_Obrigatoria TEXT,
         Nivel_Assistencia TEXT, Via_Proposta TEXT, Dieta_Prescrita TEXT, Conduta TEXT,
         Adequacao_Calorica REAL, Parecer_IA TEXT,
+        Suplemento TEXT DEFAULT '', Agua_ml TEXT DEFAULT '',
         Notas_Plantao TEXT, Ultima_Reavaliacao TEXT, Data_Alta TEXT
     )''')
+    # Migração segura: adiciona colunas novas sem quebrar bancos existentes
+    for _col in ["Suplemento", "Agua_ml"]:
+        try:
+            c.execute(f"ALTER TABLE pacientes_ativos ADD COLUMN {_col} TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            c.execute(f"ALTER TABLE historico_alta ADD COLUMN {_col} TEXT DEFAULT ''")
+        except Exception:
+            pass
     conn.commit()
     conn.close()
 
@@ -67,6 +79,7 @@ MAPA_COLUNAS = {
     "Dieta Prescrita": "Dieta_Prescrita", "Conduta": "Conduta",
     "Adequacao_Calorica": "Adequacao_Calorica", "Parecer_IA": "Parecer_IA",
     "Notas_Plantao": "Notas_Plantao", "Ultima_Reavaliacao": "Ultima_Reavaliacao",
+    "Suplemento": "Suplemento", "Agua_ml": "Agua_ml",
 }
 
 def load_pacientes():
@@ -93,7 +106,7 @@ def salvar_paciente(dados: dict):
         "Altura_Referida","IMC_Calculado","Classe_IMC","Data_Nascimento","Idade_Anos",
         "Idade_Meses","Faixa_Etaria","Escore_Triagem","Risco","Intervencao_Obrigatoria",
         "Nivel_Assistencia","Via_Proposta","Dieta_Prescrita","Conduta","Adequacao_Calorica",
-        "Parecer_IA","Notas_Plantao","Ultima_Reavaliacao"
+        "Parecer_IA","Suplemento","Agua_ml","Notas_Plantao","Ultima_Reavaliacao"
     ]
     dados_db = {k: v for k, v in dados_db.items() if k in colunas_validas}
     conn = get_connection()
@@ -219,7 +232,8 @@ _opcoes_menu = [
     "Módulo 2: Prescrição e Evolução",
     "Módulo 3: Avaliação EMTN",
     "Módulo 4: Passagem de Plantão",
-    "Módulo 5: Indicadores",
+    "Módulo 5: Mapa de Dietas",
+    "Módulo 6: Indicadores",
 ]
 # Após concluir uma avaliação ou evolução, o app volta para o módulo correto automaticamente
 _default_menu = st.session_state.get("menu_ativo", "🏠 Início")
@@ -280,6 +294,36 @@ def analisar_dados_com_ia(dados):
     if not insights:
         insights.append("✅ **Parâmetros de Estabilidade:** Dados clínicos atuais sem alertas críticos imediatos. Seguir protocolo assistencial padrão conforme nível de atenção definido.")
     return "\n\n".join(insights)
+
+
+# ==================================================================================================
+# FUNÇÃO AUXILIAR — RENDERIZAÇÃO DO MAPA DE DIETAS EDITÁVEL
+# ==================================================================================================
+def _render_mapa_editavel(df_bloco: "pd.DataFrame", chave_setor: str):
+    """Exibe tabela editável do mapa de dietas e persiste alterações no banco."""
+    df_edit = st.data_editor(
+        df_bloco,
+        column_config={
+            "Leito":          st.column_config.TextColumn("Leito", disabled=True, width="small"),
+            "Nome":           st.column_config.TextColumn("Paciente", disabled=True, width="medium"),
+            "Idade_Anos":     st.column_config.NumberColumn("Idade", disabled=True, format="%d a", width="small"),
+            "Via_Proposta":   st.column_config.TextColumn("Via", disabled=True, width="small"),
+            "Dieta_Prescrita":st.column_config.TextColumn("Dieta Prescrita", disabled=True, width="medium"),
+            "Suplemento":     st.column_config.TextColumn("Suplemento ✏️", width="medium"),
+            "Agua_ml":        st.column_config.TextColumn("Água (mL/dia) ✏️", width="small"),
+            "Notas_Plantao":  st.column_config.TextColumn("Observações ✏️", width="large"),
+        },
+        hide_index=True,
+        use_container_width=True,
+        key=f"mapa_dieta_{chave_setor}"
+    )
+    if st.button(f"💾 Salvar alterações — {chave_setor}", key=f"btn_salvar_mapa_{chave_setor}"):
+        for _, row in df_edit.iterrows():
+            atualizar_paciente(row["Nome"], "Suplemento",    str(row.get("Suplemento", "") or ""))
+            atualizar_paciente(row["Nome"], "Agua_ml",       str(row.get("Agua_ml", "") or ""))
+            atualizar_paciente(row["Nome"], "Notas_Plantao", str(row.get("Notas_Plantao", "") or ""))
+        st.success(f"✅ Mapa de dietas de {chave_setor} salvo com sucesso!")
+        st.rerun()
 
 # ==================================================================================================
 # TELA INICIAL — BRIEFING E SELEÇÃO DE MÓDULO
@@ -378,7 +422,7 @@ if menu == "🏠 Início":
             "📋 Prescrição e Evolução":    "Módulo 2: Prescrição e Evolução",
             "🎯 Avaliação EMTN":           "Módulo 3: Avaliação EMTN",
             "📝 Passagem de Plantão":      "Módulo 4: Passagem de Plantão",
-            "📊 Indicadores":              "Módulo 5: Indicadores",
+            "📊 Indicadores":              "Módulo 6: Indicadores",
         }
         for _label, _destino in _modulos.items():
             if st.button(_label, use_container_width=True, key=f"btn_home_{_destino}"):
@@ -819,10 +863,10 @@ elif menu == "Módulo 4: Passagem de Plantão":
             st.rerun()
 
 # ==================================================================================================
-# MÓDULO 5 — INDICADORES
+# MÓDULO 6 — INDICADORES
 # ==================================================================================================
-elif menu == "Módulo 5: Indicadores":
-    st.title("📊 Módulo 5: Dashboard de Indicadores Epidemiológicos e de Qualidade")
+elif menu == "Módulo 6: Indicadores":
+    st.title("📊 Módulo 6: Dashboard de Indicadores Epidemiológicos e de Qualidade")
     df      = load_pacientes()
     df_alta = load_historico()
 
@@ -854,3 +898,71 @@ elif menu == "Módulo 5: Indicadores":
         else:
             cols_alta = [c for c in ["Nome","Setor","Leito","Risco","Via_Proposta","Data_Alta"] if c in df_alta.columns]
             st.dataframe(df_alta[cols_alta], use_container_width=True, hide_index=True)
+
+# ==================================================================================================
+# MÓDULO 5 — MAPA DE DIETAS POR UNIDADE DE INTERNAÇÃO
+# ==================================================================================================
+elif menu == "Módulo 5: Mapa de Dietas":
+    st.title("🍽️ Módulo 5: Mapa de Dietas por Unidade de Internação")
+
+    df_md = load_pacientes()
+
+    if df_md.empty:
+        st.info("Nenhum paciente ativo. Realize a admissão no Módulo 1.")
+    else:
+        # Garante colunas opcionais
+        for _col in ["Suplemento", "Agua_ml"]:
+            if _col not in df_md.columns:
+                df_md[_col] = ""
+
+        st.markdown(f"**Data de referência:** {date.today().strftime('%d/%m/%Y')} &nbsp;|&nbsp; **Total de pacientes:** {len(df_md)}")
+        st.markdown("---")
+
+        # Seletor de unidade
+        setores_disponiveis = sorted(df_md["Setor"].dropna().unique().tolist())
+        opcao_setor = st.selectbox(
+            "Filtrar por Unidade de Internação:",
+            ["Todas as Unidades"] + setores_disponiveis
+        )
+
+        if opcao_setor != "Todas as Unidades":
+            df_filtrado = df_md[df_md["Setor"] == opcao_setor].copy()
+        else:
+            df_filtrado = df_md.copy()
+
+        if df_filtrado.empty:
+            st.warning("Nenhum paciente nesta unidade.")
+        else:
+            # Monta o dataframe do mapa editável
+            df_mapa = df_filtrado[[
+                "Leito", "Nome", "Idade_Anos", "Setor",
+                "Via_Proposta", "Dieta_Prescrita",
+                "Suplemento", "Agua_ml", "Notas_Plantao"
+            ]].copy()
+
+            df_mapa = df_mapa.sort_values(["Setor", "Leito"]).reset_index(drop=True)
+            df_mapa["Suplemento"] = df_mapa["Suplemento"].fillna("")
+            df_mapa["Agua_ml"]    = df_mapa["Agua_ml"].fillna("")
+            df_mapa["Notas_Plantao"] = df_mapa["Notas_Plantao"].fillna("")
+
+            # Exibe por unidade se "Todas"
+            if opcao_setor == "Todas as Unidades":
+                for setor in sorted(df_mapa["Setor"].unique()):
+                    st.markdown(f"### 🏥 {setor}")
+                    df_setor_bloco = df_mapa[df_mapa["Setor"] == setor].drop(columns=["Setor"])
+                    _render_mapa_editavel(df_setor_bloco, setor)
+                    st.markdown("---")
+            else:
+                st.markdown(f"### 🏥 {opcao_setor}")
+                df_sem_setor = df_mapa.drop(columns=["Setor"])
+                _render_mapa_editavel(df_sem_setor, opcao_setor)
+
+        st.markdown("---")
+        # Botão de impressão/exportação visual
+        st.markdown("""
+        <div style="background:#F0F4F8; border-left:4px solid #4D6452;
+                    padding:14px 18px; border-radius:8px; font-size:0.9rem; color:#2E3D30;">
+            💡 <b>Dica:</b> Para imprimir o mapa, use <b>Ctrl+P</b> (ou Cmd+P no Mac) e selecione
+            "Salvar como PDF". O layout da tabela será preservado na impressão.
+        </div>
+        """, unsafe_allow_html=True)
