@@ -72,7 +72,6 @@ if 'banco_pacientes' not in st.session_state:
 
 # DICIONÁRIO DE USUÁRIOS
 CONTA_USUARIOS = {
-    CONTA_USUARIOS = {
     "vinicius.mariano": {"senha": "casa0904", "nome_completo": "Dr. Vinícius Mariano"},
     "priscila.nutri": {"senha": "nutri1234", "nome_completo": "Nutri. Priscila"},
     "resilda.enfermeira": {"senha": "enf1234", "nome_completo": "Enf. Resilda"},
