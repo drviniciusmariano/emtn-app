@@ -291,13 +291,30 @@ if menu == "🏠 Início":
     # ---- Cabeçalho institucional ----
     st.markdown("""
         <div style="background: linear-gradient(135deg, #4D6452 0%, #2E3D30 100%);
-                    padding: 40px 36px 32px 36px; border-radius: 14px; margin-bottom: 28px;">
-            <h1 style="color:#FFFFFF; margin:0; font-size:2.1rem; font-family:'Helvetica Neue',Arial,sans-serif;">
-                🏥 Sistema EMTN — Hospital Municipal de Paulínia
-            </h1>
-            <p style="color:#C8D8CA; margin:10px 0 0 0; font-size:1.05rem;">
-                Equipe Multiprofissional de Terapia Nutricional &nbsp;|&nbsp; Gestão Integrada do Cuidado Nutricional Hospitalar
-            </p>
+                    padding: 32px 40px; border-radius: 14px; margin-bottom: 28px;
+                    display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: nowrap;">
+                <span style="font-size: 2.2rem; line-height: 1;">🏥</span>
+                <span style="color: #FFFFFF; font-size: 1.7rem; font-weight: 700;
+                             font-family: 'Helvetica Neue', Arial, sans-serif;
+                             white-space: nowrap; line-height: 1.2;">
+                    Sistema EMTN &mdash; Hospital Municipal de Paulínia
+                </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;
+                        padding-left: 4px; flex-wrap: nowrap;">
+                <span style="color: #A8C4AA; font-size: 0.95rem;
+                             font-family: 'Helvetica Neue', Arial, sans-serif;
+                             white-space: nowrap; letter-spacing: 0.02em;">
+                    Equipe Multiprofissional de Terapia Nutricional
+                </span>
+                <span style="color: #6B9470; font-size: 0.85rem;">|</span>
+                <span style="color: #A8C4AA; font-size: 0.95rem;
+                             font-family: 'Helvetica Neue', Arial, sans-serif;
+                             white-space: nowrap; letter-spacing: 0.02em;">
+                    Gestão Integrada do Cuidado Nutricional Hospitalar
+                </span>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -428,14 +445,14 @@ elif menu == "Módulo 1: Triagem e Admissão":
     if st.session_state.passo_atual == "identificacao":
         with st.form("form_passo_1"):
             st.subheader("Identificação Básica do Paciente")
-            f_avaliador    = st.text_input("1. Avaliador *", value=st.session_state.nome_avaliador, disabled=True)
-            f_data_adm     = st.date_input("2. Data de Admissão Hospitalar *", format="DD/MM/YYYY")
-            f_nome         = st.text_input("3. Nome Completo do Paciente *")
-            f_sexo         = st.radio("4. Gênero Biológico *", ["Masculino","Feminino"])
-            f_setor        = st.selectbox("5. Setor de Internação *", ["Pronto Socorro Adulto","Pronto Socorro Infantil","Clinica Médica","Clínica Cirúrgica","Ginecologia e Obstetrícia","Pediatria","UTI"])
-            f_leito        = st.text_input("6. Identificação do Leito *")
-            f_data_triagem = st.date_input("7. Data Real da Triagem EMTN", format="DD/MM/YYYY")
-            f_via          = st.selectbox("8. Via de Alimentação de Entrada *", ["Oral","Sonda Nasoenteral","Gastrostomia","Jejunostomia","Parenteral periférica","Parenteral central","Jejum"])
+            f_avaliador    = st.text_input("Avaliador *", value=st.session_state.nome_avaliador, disabled=True)
+            f_data_adm     = st.date_input("Data de Admissão Hospitalar *", format="DD/MM/YYYY")
+            f_nome         = st.text_input("Nome Completo do Paciente *")
+            f_sexo         = st.radio("Gênero Biológico *", ["Masculino","Feminino"])
+            f_setor        = st.selectbox("Setor de Internação *", ["Pronto Socorro Adulto","Pronto Socorro Infantil","Clinica Médica","Clínica Cirúrgica","Ginecologia e Obstetrícia","Pediatria","UTI"])
+            f_leito        = st.text_input("Identificação do Leito *")
+            f_data_triagem = st.date_input("Data Real da Triagem EMTN", format="DD/MM/YYYY")
+            f_via          = st.selectbox("Via de Alimentação de Entrada *", ["Oral","Sonda Nasoenteral","Gastrostomia","Jejunostomia","Parenteral periférica","Parenteral central","Jejum"])
             if st.form_submit_button("Avançar para Dados Clínicos e Idade ➔"):
                 if not f_nome or not f_leito:
                     st.error("Preencha os campos obrigatórios: Nome e Leito.")
@@ -458,13 +475,13 @@ elif menu == "Módulo 1: Triagem e Admissão":
         st.subheader("Anamnese Clínica e Perfil Antropométrico")
         st.markdown(f"**Paciente:** {st.session_state.dados_triagem_base['Nome']} | **Leito:** {st.session_state.dados_triagem_base['Leito']}")
 
-        f_data_nasc = st.date_input("14. Data de Nascimento *", value=date(1980,1,1),
+        f_data_nasc = st.date_input("Data de Nascimento *", value=date(1980,1,1),
                                     min_value=date(1900,1,1), max_value=date.today(), format="DD/MM/YYYY")
         anos, meses = calcular_idade_detalhada(f_data_nasc)
 
         col_a1, col_a2 = st.columns(2)
-        with col_a1: f_peso_hab = st.number_input("12. Peso Habitual (kg) *", min_value=0.0, max_value=300.0, value=70.0, step=0.1, format="%.2f")
-        with col_a2: f_altura   = st.number_input("13. Altura (m) *", min_value=0.10, max_value=2.50, value=1.70, step=0.01, format="%.2f")
+        with col_a1: f_peso_hab = st.number_input("Peso Habitual (kg) *", min_value=0.0, max_value=300.0, value=70.0, step=0.1, format="%.2f")
+        with col_a2: f_altura   = st.number_input("Altura (m) *", min_value=0.10, max_value=2.50, value=1.70, step=0.01, format="%.2f")
 
         st.success(f"📌 Idade calculada: {anos} anos e {meses} meses.")
 
@@ -480,8 +497,8 @@ elif menu == "Módulo 1: Triagem e Admissão":
                 st.info(f"⚖️ IMC: {imc_real:.2f} kg/m² (Avaliar por Curva de Crescimento)")
 
         with st.form("form_passo_2"):
-            f_diag = st.text_area("10. Diagnóstico Médico de Admissão *")
-            f_comorbidades = st.multiselect("11. Comorbidades Crônicas Associadas *", [
+            f_diag = st.text_area("Diagnóstico Médico de Admissão *")
+            f_comorbidades = st.multiselect("Comorbidades Crônicas Associadas *", [
                 "NÃO POSSUI COMORBIDADE","Acamado(a)","Diabetes mellitus","Drogadição (SPA)",
                 "Etilismo","Hipertensão arterial sistêmica","Infarto","Insuficiência cardíaca",
                 "Obesidade","Tabagismo","Doença autoimune","Doença hematológica",
@@ -511,10 +528,10 @@ elif menu == "Módulo 1: Triagem e Admissão":
         st.subheader("🧬 Rastreamento de Risco Pediátrico: Ferramenta STRONG KIDS")
         st.info("🔬 **HMP / USP:** A ferramenta STRONGkids avalia 4 domínios críticos para desnutrição infantil intrahospitalar.")
         with st.form("form_strong"):
-            q1 = st.radio("17. A criança aparenta perda de tecido adiposo ou massa muscular?", ["Não (0 ponto)","Sim (1 ponto)"])
-            q2 = st.radio("18. Patologia de base em alto risco nutricional ou cirurgia de grande porte?", ["Não (0 ponto)","Sim (2 pontos)"])
-            q3 = st.radio("19. Diarreia severa, vômitos reincidentes ou ingestão oral deficitária?", ["Não (0 ponto)","Sim (1 ponto)"])
-            q4 = st.radio("20. Perda de peso involuntária ou incapacidade de ganho estatural?", ["Não (0 ponto)","Sim (1 ponto)"])
+            q1 = st.radio("A criança aparenta perda de tecido adiposo ou massa muscular?", ["Não (0 ponto)","Sim (1 ponto)"])
+            q2 = st.radio("Patologia de base em alto risco nutricional ou cirurgia de grande porte?", ["Não (0 ponto)","Sim (2 pontos)"])
+            q3 = st.radio("Diarreia severa, vômitos reincidentes ou ingestão oral deficitária?", ["Não (0 ponto)","Sim (1 ponto)"])
+            q4 = st.radio("Perda de peso involuntária ou incapacidade de ganho estatural?", ["Não (0 ponto)","Sim (1 ponto)"])
             if st.form_submit_button("Computar Escore Pediátrico ➔"):
                 escore = ("Sim" in q1) + ("2 pontos" in q2)*2 + ("Sim" in q3) + ("Sim" in q4)
                 if escore >= 4:
@@ -543,13 +560,13 @@ elif menu == "Módulo 1: Triagem e Admissão":
             st.checkbox("Redução expressiva da ingestão na última semana?")
             st.checkbox("Estado clínico grave?")
             st.markdown("---")
-            f_det = st.radio("27. Deterioração do Estado Nutricional *", [
+            f_det = st.radio("Deterioração do Estado Nutricional *", [
                 "0 : Ausente - Estado nutricional normal",
                 "1 : Leve - Perda > 5% em 3 meses OU aceitação 50-75% há 1 semana",
                 "2 : Moderado - Perda > 5% em 2 meses OU IMC 18,5-20,5 + piora OU aceitação 25-50% há 1 semana",
                 "3 : Grave - Perda > 5% em 1 mês (>15% em 3 meses) OU IMC < 18,5 + piora OU aceitação 0-25%",
             ])
-            f_grav = st.radio("28. Gravidade da Doença *", [
+            f_grav = st.radio("Gravidade da Doença *", [
                 "0 : Ausente - Requerimento nutricional normal",
                 "1 : Leve - Fratura quadril, cirrose, DPOC, hemodiálise, diabetes, oncologia",
                 "2 : Moderado - Cirurgia abdominal grande porte, AVC, pneumonia grave, leucemia",
@@ -624,9 +641,9 @@ elif menu == "Módulo 1: Triagem e Admissão":
             st.warning(f"Risco: **{db.get('Risco','N/A')}** | Escore: **{db.get('Escore Triagem',0)}** | IMC: {db.get('IMC Calculado',0.0)} ({db.get('Classe IMC','N/A')})")
             st.markdown(f"📋 **Intervenção sugerida:**\n\n{db.get('Intervencao_Obrigatoria','')}")
 
-            f_nivel    = st.selectbox("38. Nível de Assistência *", ["Primário","Secundário A","Secundário B","Terciário"])
-            f_conduta  = st.text_area("83. Conduta Terapêutica Adotada *", placeholder="Insira a conduta oficial...")
-            f_via_prop = st.selectbox("84. Via de Alimentação Proposta *", ["Oral","Sonda Nasoenteral","Gastrostomia","Jejunostomia","Parenteral periférica","Parenteral central","Jejum"])
+            f_nivel    = st.selectbox("Nível de Assistência *", ["Primário","Secundário A","Secundário B","Terciário"])
+            f_conduta  = st.text_area("Conduta Terapêutica Adotada *", placeholder="Insira a conduta oficial...")
+            f_via_prop = st.selectbox("Via de Alimentação Proposta *", ["Oral","Sonda Nasoenteral","Gastrostomia","Jejunostomia","Parenteral periférica","Parenteral central","Jejum"])
             f_dieta    = st.text_input("Dieta / Fórmula Prescrita *")
 
             if st.form_submit_button("✅ Finalizar Admissão e Salvar no Banco de Dados"):
