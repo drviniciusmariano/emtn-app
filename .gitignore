@@ -1,0 +1,18 @@
+# Banco de dados local
+*.db
+*.sqlite
+
+# Secrets (nunca sobe para o GitHub)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
